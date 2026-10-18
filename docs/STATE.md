@@ -30,8 +30,12 @@
      badges) — currently compile/typecheck-verified only.
 - Open risks: apk-reverse 404 still unresolved (REFERENCE_ANALYSIS.md), Java 25
   vs JDK 17 pin (works today), i18next peer-dep warning.
-- Build state: **installers built 2026-10-18** (post-improvement-pass):
-  `apps/desktop/src-tauri/target/release/bundle/msi/CatDot
-  Studio_0.1.0_x64_en-US.msi` (4.0 MiB, sha256 81a8…3c5b9) and
-  `…/nsis/CatDot Studio_0.1.0_x64-setup.exe` (2.9 MiB, sha256 38c8…6157).
-  Release exe smoke-tested (launch 5 s alive 31.5 MB, then force-killed).
+- Build state: **installers built 2026-10-18** (latest, with the native APK
+  file-picker): `apps/desktop/src-tauri/target/release/bundle/msi/CatDot
+  Studio_0.1.0_x64_en-US.msi` (4.10 MiB, sha256 3f50…cf01) and
+  `…/nsis/CatDot Studio_0.1.0_x64-setup.exe` (2.94 MiB, sha256 14bc…7060).
+  Release exe smoke-tested (launch 5 s alive, then force-killed).
+- Import UX (2026-10-18, same day, ADR-0012): added a **native APK file-picker**
+  ("Open APK…" in Explorer + Dashboard) via `tauri-plugin-dialog` with only
+  `dialog:allow-open` granted — previously import required drag-drop or typing
+  an absolute path, which read as "import doesn't work".
