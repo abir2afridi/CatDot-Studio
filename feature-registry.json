@@ -79,6 +79,13 @@
       "evidence": ["pnpm --filter desktop build", "pnpm --filter desktop typecheck"]
     },
     {
+      "id": "ide-shell-x1",
+      "title": "IDE shell (X1): command palette, bottom Logs/Build panel, resizable layout persisted to settings DB",
+      "phase": 1,
+      "status": "real",
+      "evidence": ["pnpm test (commands-filter, i18n parity)", "pnpm typecheck", "pnpm lint", "cargo test -p catdot-core (settings persistence)", "pnpm tauri build"]
+    },
+    {
       "id": "settings-persistence",
       "title": "Settings persistence (SQLite, real IPC)",
       "phase": 0,

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "react-i18next";
 import { apkExport, apkBuildSign, apkImport, apkReport, apkRevertAll, apkPatchSummary } from "../lib/apk";
+import { pickApkPath } from "../lib/pick";
 import { IpcError } from "../lib/ipc";
 import { useUi } from "../state/ui";
 
@@ -65,16 +65,8 @@ export function Explorer() {
   // Native "Open file" dialog (Part E4: dialog plugin for file pick only).
   const pickAndImport = async () => {
     try {
-      const picked = await openFileDialog({
-        multiple: false,
-        directory: false,
-        title: t("explorer.openApk"),
-        filters: [
-          { name: "Android packages", extensions: ["apk", "xapk", "apks", "apkm"] },
-          { name: "All files", extensions: ["*"] },
-        ],
-      });
-      if (typeof picked === "string" && picked !== "") {
+      const picked = await pickApkPath(t("explorer.openApk"));
+      if (picked != null) {
         importMut.mutate(picked);
       }
     } catch (e) {
@@ -116,6 +108,8 @@ export function Explorer() {
   const buildMut = useMutation({
     mutationFn: () => apkBuildSign(),
     onSuccess: (res) => {
+      // Feed the bottom panel's Build tab with the real report.
+      useUi.getState().setLastBuild(res);
       const ok = res.steps.length > 0 && res.steps.every((s) => s.exit_code === 0);
       setMessage({
         text: ok ? t("explorer.built") : t("explorer.buildFailed"),
@@ -123,7 +117,10 @@ export function Explorer() {
       });
       void queryClient.invalidateQueries({ queryKey: ["apk"] });
     },
-    onError: (e) => setMessage({ text: describe(e), ok: false }),
+    onError: (e) => {
+      useUi.getState().setLastBuild(null);
+      setMessage({ text: describe(e), ok: false });
+    },
   });
 
   // Drag & drop an APK onto the sidebar (real absolute paths from the shell).

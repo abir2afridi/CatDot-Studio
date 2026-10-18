@@ -46,3 +46,18 @@ code,
 .mono {
   font-family: var(--mono);
 }
+
+/* Transient status-bar notice: fades out over 6 s; the SPA clears state on
+   the animation end event (no timer work simulated in JS). */
+@keyframes notice-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.notice-fade {
+  animation: notice-fade 6s ease-in forwards;
+}
