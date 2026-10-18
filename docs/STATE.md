@@ -1,29 +1,26 @@
-﻿# STATE â€” CatDot Studio (resumption file)
+﻿# STATE — CatDot Studio (resumption file)
 
-- Current phase: **Phase 2 slice pulled forward on user request** (import â†’
-  edit â†’ export â†’ align â†’ sign pipeline is REAL and verified; VS Code-style
-  UI is real). Phase 0 remains fully verified (installer 0.1.0 exists).
-- Last completed (2026-10-17, this session):
-  - Core: `workspace.rs` â€” real APK import (read-only copy), ZIP entry report
-    + SHA-256, per-entry text read, faithful repack export (new file, never
-    touching the original), patch model; `apk_types.rs` OS contracts;
-    `tools/build_tools.rs` â€” keytool debug keystore auto-create, zipalign,
-    apksigner sign + verify, hard timeouts, kill on hang. 69 core tests green
-    (incl. end-to-end: aapt2-built test APK â†’ align â†’ sign â†’ verify on this
-    machine). clippy -D warnings clean (core + desktop).
-  - Desktop: `apk_commands.rs` (9 typed commands), ApkState, audit events in
-    SQLite, session + per-APK patch persistence (`patches.json` keyed by the
-    APK's SHA-256 â€” different import invalidates stale patches).
-  - UI: VS Code-style shell â€” ActivityBar (4 SVG icons), Explorer sidebar
-    (drag-drop + path input import, real asset tree, Export / BuildÂ·AlignÂ·Sign),
-    tabbed EntryEditor (Save/Revert, patched badge, unsaved marker),
-    StatusBar with toolchain dot + APK status + pending-edit count.
-    `pnpm typecheck/lint/test/audit:reality` all PASS (25 registry features).
-- Feature gaps (honest): decoded resource/smali editing needs apktool + jadx
-  (registry: `decode-apk-tools` disabled-planned with install hint).
+- Current phase: **Phase 2 slice pulled forward** (import → edit → export →
+  align → sign pipeline is real and verified; VS Code-style UI is real).
+  Phase 0 remains fully verified. Master spec is now **v5.1**
+  (`docs/MASTER_PROMPT.md`) — resume protocol executed 2026-10-18.
+- Restart protocol executed this session (2026-10-18):
+  - Truth audit: all gates green (typecheck, lint, 4 JS tests, 69 cargo tests,
+    clippy, audit:reality 25 features) → `docs/EVIDENCE/baseline.md`.
+  - `docs+/` consolidated into `docs/MASTER_PROMPT.md` (v5.1), folder deleted
+    (ADR-0009).
+  - **Rebrand commit done** (Part 0.3 step 5): `apk-forge-core` → `catdot-core`,
+    `@apk-forge/*` → `@catdot/*`, package `catdot-studio`, productName/window
+    `CatDot Studio`, bundle id `com.catdotstudio.app`, DB/keyring/keystore
+    identifiers rebranded without local-data migration (ADR-0011). Layout kept
+    as-is (ADR-0010). Lockfiles regenerated.
 - Next 3 steps:
-  1. `pnpm tauri build` â†’ new NSIS/MSI installers with the pipeline + new UI.
+  1. `pnpm tauri build` → new NSIS/MSI installers under the new brand, then
+     manual smoke of installer + UI (currently `UNVERIFIED-ENV` this session).
   2. Guided-edit flow (Phase 3): pending-checkpoint list, before/after diff,
      restore point per export.
-  3. adb install flow (if device/emulator present): install signed APK via adb.
-- Open risks: same as before (apk-reverse 404, Java 25 compat, i18next peer).
+  3. adb install flow (device/emulator permitting) + branding config module
+     (`branding.ts` + Rust const) so name/logo/colors live in one place.
+- Open risks: apk-reverse 404 still unresolved (REFERENCE_ANALYSIS.md), Java 25
+  vs JDK 17 pin (works today), i18next peer-dep warning, no UI runtime drive
+  yet this session.
