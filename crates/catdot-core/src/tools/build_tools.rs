@@ -26,6 +26,10 @@ pub struct BuildReport {
     pub aligned_apk: Option<String>,
     pub signed_apk: Option<String>,
     pub keystore_created: bool,
+    /// Real `zipalign -c` check result (`aligned` step).
+    pub aligned_verified: bool,
+    /// Real `apksigner verify` result (`signed` step).
+    pub signature_verified: bool,
     pub steps: Vec<SignStep>,
 }
 
@@ -141,10 +145,10 @@ pub fn tool_paths() -> Result<(PathBuf, PathBuf, PathBuf), AppError> {
 }
 
 /// Ensure a debug keystore exists (auto-created once with a fixed alias).
-/// Passphrase is stored ONLY in app-local storage (as Phase 0 MVP).
+/// Passphrase is knowledge-embedded for the debug keystore only (release keystores must never hardcode secrets; Phase 4 adds the keystore manager).
 pub fn ensure_keystore(data_dir: &Path, keytool: &Path) -> Result<(PathBuf, String, String), AppError> {
     std::fs::create_dir_all(data_dir.join("keys"))?;
-    let ks = data_dir.join("keys").join("forge-debug.jks");
+    let ks = data_dir.join("keys").join("catdot-debug.jks");
     const STORE_PASS: &str = "catdot-local";
     const ALIAS: &str = "catdot";
     if ks.is_file() {
@@ -198,6 +202,8 @@ pub fn align_and_sign(
         aligned_apk: None,
         signed_apk: None,
         keystore_created: keystore.is_file(),
+        aligned_verified: false,
+        signature_verified: false,
         steps: Vec::new(),
     };
     let (zipalign, apksigner, _keytool) = tool_paths()?;
@@ -223,6 +229,27 @@ pub fn align_and_sign(
         return Err(tool_err("zipalign", r.out));
     }
     report.aligned_apk = Some(aligned.to_string_lossy().into_owned());
+
+    // 1b) zipalign -c 4 aligned — verify alignment, not just run the tool.
+    let r = run(
+        &zipalign,
+        &["-c", "4", aligned.to_string_lossy().as_ref()],
+        Some(workdir),
+        Duration::from_secs(120),
+    )
+    .ok_or_else(|| tool_err("zipalign-check", "zipalign did not start"))?;
+    steps.push(SignStep {
+        step: "zipalign-check".into(),
+        exit_code: r.code,
+        detail: r.out.trim().to_string(),
+    });
+    if r.code != 0 {
+        for s in &steps {
+            push_log_error("build", &s.step, &s.detail);
+        }
+        return Err(tool_err("zipalign-check", r.out));
+    }
+    report.aligned_verified = true;
 
     // 2) apksigner sign --ks ... --out signed aligned
     let ks_arg = format!("--ks={}", keystore.to_string_lossy());
@@ -276,6 +303,7 @@ pub fn align_and_sign(
         }
         return Err(tool_err("apksigner-verify", r.out));
     }
+    report.signature_verified = true;
     report.steps = steps;
     Ok(report)
 }
@@ -387,6 +415,8 @@ mod tests {
         assert!(aligned.is_file());
         assert!(signed.is_file());
         assert!(rep.steps.iter().all(|s| s.exit_code == 0), "all steps exit 0");
+        assert!(rep.aligned_verified, "zipalign -c must pass");
+        assert!(rep.signature_verified, "apksigner verify must pass");
         let _ = std::fs::remove_dir_all(&dir);
     }
 

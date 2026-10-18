@@ -4,13 +4,14 @@
 //! writes a NEW file. No apktool/JADX needed for these flows.
 
 use std::collections::HashMap;
-use std::io::{Read};
+use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use ts_rs::TS;
 use zip::write::SimpleFileOptions;
+use zip::CompressionMethod;
 use zip::ZipArchive;
 
 use crate::errors::{AppError, ErrorCode};
@@ -65,7 +66,8 @@ fn unknown_entry(p: &str) -> AppError {
 }
 
 /// Copy `source` into `workspace/original.apk` (source stays untouched) and
-/// report the archive contents.
+/// report the archive contents. The source must be a ZIP by magic bytes
+/// (`PK\x03\x04`) — detection is by content, not extension (Part F1).
 pub fn import_apk(source: &Path, workspace_root: &Path) -> Result<ApkReport, AppError> {
     std::fs::create_dir_all(workspace_root)?;
     let meta = std::fs::metadata(source)
@@ -73,10 +75,33 @@ pub fn import_apk(source: &Path, workspace_root: &Path) -> Result<ApkReport, App
     if meta.len() > MAX_APK_BYTES {
         return Err(read_err("source APK exceeds the 2 GiB limit"));
     }
+    if !source.is_file() {
+        return Err(read_err("source is not a regular file"));
+    }
+    reject_non_zip(source)?;
     let target = workspace_root.join("original.apk");
     std::fs::copy(source, &target)
         .map_err(|e| read_err(format!("copy failed: {e}")))?;
     report_of(&target, "original.apk")
+}
+
+/// Reject files whose leading bytes are not the local-file-header ZIP magic.
+/// The check runs BEFORE anything is copied, so a bad file never reaches the
+/// workspace.
+fn reject_non_zip(source: &Path) -> Result<(), AppError> {
+    let mut f = std::fs::File::open(source)
+        .map_err(|e| read_err(format!("cannot open source: {e}")))?;
+    let mut magic = [0u8; 4];
+    let n = f
+        .read(&mut magic)
+        .map_err(|e| read_err(format!("cannot read source: {e}")))?;
+    if n == 4 && magic == [0x50, 0x4B, 0x03, 0x04] {
+        Ok(())
+    } else {
+        Err(read_err(
+            "file is not a valid APK (missing ZIP magic; allowed types: .apk APK)",
+        ))
+    }
 }
 
 /// Scan the APK's central directory and build a report.
@@ -123,11 +148,22 @@ pub fn report_of(apk_path: &Path, name: &str) -> Result<ApkReport, AppError> {
     })
 }
 
-/// SHA-256 of a file, hex-encoded.
+/// SHA-256 of a file, hex-encoded. Streams in 1 MiB chunks so a 2 GiB APK
+/// never loads into memory (Part F1: "stream, don't load whole file").
 pub fn sha256_file(p: &Path) -> Result<String, AppError> {
-    let data = std::fs::read(p).map_err(|e| read_err(format!("read failed: {e}")))?;
+    let f = std::fs::File::open(p).map_err(|e| read_err(format!("open failed: {e}")))?;
+    let mut r = BufReader::with_capacity(1024 * 1024, f);
     let mut h = Sha256::new();
-    h.update(&data);
+    let mut chunk = [0u8; 64 * 1024];
+    loop {
+        let n = r
+            .read(&mut chunk)
+            .map_err(|e| read_err(format!("read failed: {e}")))?;
+        if n == 0 {
+            break;
+        }
+        h.update(&chunk[..n]);
+    }
     Ok(format!("{:x}", h.finalize()))
 }
 
@@ -161,7 +197,11 @@ pub fn read_entry(apk_path: &Path, entry_path: &str) -> Result<String, AppError>
 
 /// Export a NEW APK at `out_path` with `patches` applied. Every patch target
 /// must exist in the APK (add-file flows land later). Returns the exported
-/// file's SHA-256. Unpatched entries are copied byte-for-byte.
+/// file's SHA-256. Unpatched entries are copied byte-for-byte; each entry's
+/// original compression method is preserved (Stored stays Stored — required
+/// so `resources.arsc` can remain uncompressed+aligned for targetSdk ≥ 30).
+/// Patch targets are validated BEFORE any output is produced, so a failed
+/// export never leaves a partial file behind.
 pub fn export_apk(
     source_apk: &Path,
     patches: &[Patch],
@@ -189,6 +229,14 @@ pub fn export_apk(
         .map_err(|e| read_err(format!("cannot open APK: {e}")))?;
     let mut ar = ZipArchive::new(f_in)
         .map_err(|e| read_err(format!("bad APK: {e}")))?;
+
+    // Pre-validate every patch target against the archive before writing.
+    for name in unique.keys() {
+        if ar.by_name(name).is_err() {
+            return Err(unknown_entry(name));
+        }
+    }
+
     if let Some(parent) = out_path.parent() {
         std::fs::create_dir_all(parent)?;
     }
@@ -196,40 +244,38 @@ pub fn export_apk(
     // Write entries in original order; patch targets get new bytes.
     let buf = Vec::new();
     let mut zw = zip::ZipWriter::new(std::io::Cursor::new(buf));
-    let opts: SimpleFileOptions = SimpleFileOptions::default();
-    let mut missing: Option<String> = None;
     for i in 0..ar.len() {
-        let mut e = ar
-            .by_index(i)
-            .map_err(|e| read_err(format!("bad entry: {e}")))?;
-        let path = e.name().to_string();
+        let (path, method, is_dir) = {
+            let e = ar
+                .by_index_raw(i)
+                .map_err(|e| read_err(format!("bad entry: {e}")))?;
+            (e.name().to_string(), e.compression(), e.is_dir())
+        };
         match unique.get(path.as_str()) {
             Some(p) => {
+                let opts: SimpleFileOptions = SimpleFileOptions::default()
+                    .compression_method(CompressionMethod::Deflated);
                 zw.start_file(path.clone(), opts)
                     .map_err(|e| read_err(format!("write entry: {e}")))?;
                 std::io::copy(&mut p.content.as_bytes(), &mut zw)
                     .map_err(|e| read_err(format!("write failed: {e}")))?;
             }
             None => {
-                if path.ends_with('/') {
+                let opts: SimpleFileOptions = SimpleFileOptions::default()
+                    .compression_method(method);
+                if is_dir {
                     zw.add_directory(path.clone(), opts)
                         .map_err(|er| read_err(format!("write dir: {er}")))?;
                 } else {
                     zw.start_file(path.clone(), opts)
                         .map_err(|e| read_err(format!("write entry: {e}")))?;
+                    let mut e = ar
+                        .by_index(i)
+                        .map_err(|err| read_err(format!("copy failed: {err}")))?;
                     std::io::copy(&mut e, &mut zw)
                         .map_err(|err| read_err(format!("copy failed: {err}")))?;
                 }
             }
-        }
-        let _ = &mut missing;
-    }
-    // Reject patches for entries that do not exist in the APK.
-    let _ = &mut missing;
-    for p in patches {
-        if ar.by_name(&p.entry_path).is_err() {
-            zw.finish().ok();
-            return Err(unknown_entry(&p.entry_path));
         }
     }
     let bytes = zw.finish().map_err(|e| read_err(format!("finish: {e}")))?.into_inner();
@@ -263,6 +309,8 @@ pub fn workspace_root_for(data_dir: &Path, project_id: &str) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::tests_util::make_test_zip;
+    use sha2::Digest as _;
+    use crate::errors::ErrorCode;
     use std::path::PathBuf;
 
     fn tmp_dir(tag: &str) -> PathBuf {
@@ -365,6 +413,66 @@ mod tests {
     }
 
     #[test]
+    fn import_rejects_non_zip_before_copying() {
+        let dir = tmp_dir("notzip");
+        let bad = dir.join("input.bin");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(&bad, b"this is definitely not a ZIP archive").unwrap();
+        let err = super::import_apk(&bad, &dir).expect_err("must reject non-zip");
+        assert_eq!(err.code, ErrorCode::ImportUnsupportedType);
+        // Nothing was copied into the workspace.
+        assert!(!dir.join("original.apk").exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn sha256_file_streams_and_matches_small_hash() {
+        let dir = tmp_dir("sha");
+        std::fs::create_dir_all(&dir).unwrap();
+        let big = dir.join("big.bin");
+        std::fs::write(&big, vec![0xAB; 3 * 1024 * 1024 + 7]).unwrap();
+        let streamed = super::sha256_file(&big).unwrap();
+        // Same digest the eager-read path would produce.
+        let eager = {
+            let data = std::fs::read(&big).unwrap();
+            let mut h = super::Sha256::new();
+            h.update(&data);
+            format!("{:x}", h.finalize())
+        };
+        assert_eq!(streamed, eager);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn export_preserves_compression_and_rejects_partial_output() {
+        // 1) A stored (uncompressed) entry must stay stored after export.
+        let apk = super::tests_util::make_test_zip_stored(&[("resources.txt", "x")]);
+        let dir = tmp_dir("stored");
+        super::import_apk(&apk, &dir).unwrap();
+        let out = dir.join("out.apk");
+        super::export_apk(&dir.join("original.apk"), &[], &out).expect("export");
+        let f = std::fs::File::open(&out).unwrap();
+        let mut ar = zip::ZipArchive::new(f).unwrap();
+        let method = ar.by_name("resources.txt").unwrap().compression();
+        assert_eq!(method, zip::CompressionMethod::Stored);
+        let _ = std::fs::remove_dir_all(&dir);
+
+        // 2) A bad patch target must not leave a partial output file.
+        let dir2 = tmp_dir("partial");
+        super::import_apk(&apk, &dir2).unwrap();
+        let out2 = dir2.join("out2.apk");
+        let patches = vec![super::Patch {
+            entry_path: "no/such/entry.xml".into(),
+            content: "y".into(),
+        }];
+        let err = super::export_apk(&dir2.join("original.apk"), &patches, &out2)
+            .expect_err("must reject missing target");
+        assert_eq!(err.code, ErrorCode::JobNotFound);
+        assert!(!out2.exists(), "no partial output may remain");
+        let _ = std::fs::remove_dir_all(&dir2);
+    }
+
+    #[test]
     fn patch_summary_lists_entries() {
         let s = super::patch_summary(&[
             super::Patch { entry_path: "a.xml".into(), content: "x".into() },
@@ -382,6 +490,16 @@ pub mod tests_util {
 
     /// Build a real ZIP on disk with the given (name, content) entries.
     pub fn make_test_zip(entries: &[(&str, &str)]) -> PathBuf {
+        build_zip(entries, SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated))
+    }
+
+    /// Build a real ZIP whose entries are STORED (uncompressed) — mirrors
+    /// resources.arsc in real APKs (targetSdk ≥ 30 requires Stored + aligned).
+    pub fn make_test_zip_stored(entries: &[(&str, &str)]) -> PathBuf {
+        build_zip(entries, SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored))
+    }
+
+    fn build_zip(entries: &[(&str, &str)], opts: SimpleFileOptions) -> PathBuf {
         let mut d = std::env::temp_dir();
         d.push(format!(
             "catdot-zip-{}-{}.zip",
@@ -393,7 +511,6 @@ pub mod tests_util {
         ));
         let f = std::fs::File::create(&d).expect("create zip");
         let mut zw = zip::ZipWriter::new(f);
-        let opts: SimpleFileOptions = SimpleFileOptions::default();
         for (name, content) in entries {
             use std::io::Write;
             zw.start_file(*name, opts).expect("start file");
