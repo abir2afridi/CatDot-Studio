@@ -4,6 +4,13 @@
   align → sign pipeline is real and verified; VS Code-style UI is real).
   Phase 0 remains fully verified. Master spec is now **v5.1**
   (`docs/MASTER_PROMPT.md`) — resume protocol executed 2026-10-18.
+- Depth-mandate improvement pass (2026-10-18, same day):
+  core workspace got ZIP-magic import check, streaming SHA-256,
+  compression-preserving export with pre-write patch validation; build got a
+  real `zipalign -c` verify step + typed `aligned_verified`/`signature_verified`
+  flags; desktop got `apk_revert_all` + Explorer revert-all button, pending
+  count, verification badges (EN/BN keys). 72 core tests, all gates green →
+  `docs/EVIDENCE/phase-2-improvements.md`.
 - Restart protocol executed this session (2026-10-18):
   - Truth audit: all gates green (typecheck, lint, 4 JS tests, 69 cargo tests,
     clippy, audit:reality 25 features) → `docs/EVIDENCE/baseline.md`.
