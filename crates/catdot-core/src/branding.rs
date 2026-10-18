@@ -10,7 +10,7 @@ pub const APP_NAME: &str = "CatDot Studio";
 pub const APP_TAGLINE: &str = "AI-powered Android package engineering, in one offline-friendly app";
 
 /// Public repository URL.
-pub const REPO_URL: &str = "https://github.com/catdot-studio/CatDot-Studio";
+pub const REPO_URL: &str = "https://github.com/abir2afridi/CatDot-Studio";
 
 #[cfg(test)]
 mod rebrand_guard {
