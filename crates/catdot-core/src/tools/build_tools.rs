@@ -1,4 +1,4 @@
-//! Build/align/sign adapters (Part F5, Phase 2/4 slice). Processes spawn ONLY
+﻿//! Build/align/sign adapters (Part F5, Phase 2/4 slice). Processes spawn ONLY
 //! here, always from verified toolchain paths (see `detect`). Every step is a
 //! real subprocess with a hard timeout and captured stderr.
 
@@ -46,7 +46,7 @@ struct Run {
 
 /// Run `exe` with `args` under a hard timeout (poll + kill tree). Output is
 /// bounded to ~8KB via the reader threads; tools that print megabytes may
-/// block their tail — acceptable for zipalign/apksigner (small outputs).
+/// block their tail â€” acceptable for zipalign/apksigner (small outputs).
 fn run_timeout(exe: &Path, args: &[&str], cwd: Option<&Path>, timeout: Duration) -> Option<Run> {
     use std::io::Read;
     let mut c = std::process::Command::new(exe);
@@ -145,8 +145,8 @@ pub fn tool_paths() -> Result<(PathBuf, PathBuf, PathBuf), AppError> {
 pub fn ensure_keystore(data_dir: &Path, keytool: &Path) -> Result<(PathBuf, String, String), AppError> {
     std::fs::create_dir_all(data_dir.join("keys"))?;
     let ks = data_dir.join("keys").join("forge-debug.jks");
-    const STORE_PASS: &str = "apkforge-local";
-    const ALIAS: &str = "apkforge";
+    const STORE_PASS: &str = "catdot-local";
+    const ALIAS: &str = "catdot";
     if ks.is_file() {
         return Ok((ks, STORE_PASS.into(), ALIAS.into()));
     }
@@ -170,7 +170,7 @@ pub fn ensure_keystore(data_dir: &Path, keytool: &Path) -> Result<(PathBuf, Stri
             "-keypass",
             STORE_PASS,
             "-dname",
-            "CN=APK Forge AI Debug",
+            "CN=CatDot Studio Debug",
         ],
         None,
         Duration::from_secs(60),
@@ -183,7 +183,7 @@ pub fn ensure_keystore(data_dir: &Path, keytool: &Path) -> Result<(PathBuf, Stri
 }
 
 /// Align `unsigned` via zipalign (4-byte), then sign with apksigner.
-/// Writes `aligned` and `signed` — original file is untouched.
+/// Writes `aligned` and `signed` â€” original file is untouched.
 pub fn align_and_sign(
     unsigned: &Path,
     aligned: &Path,
@@ -310,7 +310,7 @@ mod tests {
     #[test]
     fn ensure_keystore_creates_file_once() {
         // Requires a JDK/keytool; skip-verify on machines without one.
-        let dir = std::env::temp_dir().join(format!("apkforge-ks-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("catdot-ks-{}", std::process::id()));
         let keytool = std::env::var("JAVA_HOME")
             .map(|j| PathBuf::from(j).join("bin").join("keytool.exe"))
             .unwrap_or_else(|_| PathBuf::from("keytool.exe"));
@@ -328,7 +328,7 @@ mod tests {
 
     #[test]
     fn align_sign_verify_end_to_end() {
-        // Real pipeline: aapt2-built APK → zipalign → apksigner sign → verify.
+        // Real pipeline: aapt2-built APK â†’ zipalign â†’ apksigner sign â†’ verify.
         // Skips (UNVERIFIED-ENV) when aapt2/android.jar/build-tools are absent.
         let t = detect_toolchain();
         let Some(aapt2) = t.aapt2.path.as_ref().map(PathBuf::from) else { return };
@@ -341,10 +341,10 @@ mod tests {
         }
         let android_jar = find_android_jar();
         let Some(android_jar) = android_jar else { return };
-        let dir = std::env::temp_dir().join(format!("apkforge-build-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("catdot-build-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
 
-        // Minimal manifest + aapt2 link → real (unsigned) APK.
+        // Minimal manifest + aapt2 link â†’ real (unsigned) APK.
         let manifest = dir.join("AndroidManifest.xml");
         std::fs::write(
             &manifest,
@@ -390,11 +390,11 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
-    /// Find the newest platforms/android-X/android.jar (UNVERIFIED-ENV → None).
+    /// Find the newest platforms/android-X/android.jar (UNVERIFIED-ENV â†’ None).
     fn find_android_jar() -> Option<PathBuf> {
         let t = detect_toolchain();
         let bt = t.apksigner.path.as_ref()?;
-        // apksigner(.bat) lives in build-tools/<ver>/ → SDK root is 3 levels up.
+        // apksigner(.bat) lives in build-tools/<ver>/ â†’ SDK root is 3 levels up.
         let p = PathBuf::from(bt);
         let sdk = p.parent().and_then(|d| d.parent()).and_then(|d| d.parent())?;
         let mut plats: Vec<(u32, PathBuf)> = Vec::new();

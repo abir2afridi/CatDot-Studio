@@ -1,4 +1,4 @@
-//! Secret store (Part E5): Windows Credential Manager only; never DB/logs.
+﻿//! Secret store (Part E5): Windows Credential Manager only; never DB/logs.
 //! Phase 0 ships the trait + in-memory impl (tests) + `keyring`-backed
 //! Windows store (see ADR 0003). Passwords pass in-memory only.
 
@@ -131,8 +131,8 @@ mod tests {
     #[test]
     fn keyring_store_round_trip_real_credential_manager() {
         let s = KeyringSecretStore::new();
-        let acct = format!("apkforge-test-{}", std::process::id());
-        let service = "ApkForgeAI-Test";
+        let acct = format!("catdot-test-{}", std::process::id());
+        let service = "CatDotStudio-Test";
         // Ensure clean slate.
         let _ = s.delete(service, &acct);
         assert_eq!(s.get(service, &acct).expect("get"), None);

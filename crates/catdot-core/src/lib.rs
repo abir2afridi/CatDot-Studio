@@ -1,4 +1,4 @@
-//! Crate root: APK Forge AI core (Phase 0 guardrails-first).
+﻿//! Crate root: CatDot Studio core (Phase 0 guardrails-first).
 //! Manual, Guided, and AI paths all call the same `tools::*` functions.
 
 pub mod ai;

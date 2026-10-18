@@ -1,4 +1,4 @@
-//! Path sandbox (Part E1).
+﻿//! Path sandbox (Part E1).
 //! Every UI/AI-requested filesystem operation must go through
 //! [`resolve_in_project`], which rejects escapes before touching disk.
 
@@ -91,7 +91,7 @@ pub fn resolve_in_project(project_root: &Path, rel: &str) -> Result<PathBuf, App
         // If the full candidate exists, check it too.
         if candidate.exists() {
             if let Ok(canon) = candidate.canonicalize() {
-                // Allow the root itself only if rel was "." — already rejected above.
+                // Allow the root itself only if rel was "." â€” already rejected above.
                 if !canon.starts_with(&canon_root) {
                     return Err(denied("path escapes project root via symlink"));
                 }
@@ -155,7 +155,7 @@ mod tests {
 
     fn tmp_root(name: &str) -> PathBuf {
         let mut d = std::env::temp_dir();
-        d.push(format!("apkforge-pathtest-{name}-{}", std::process::id()));
+        d.push(format!("catdot-pathtest-{name}-{}", std::process::id()));
         let _ = fs::create_dir_all(&d);
         d
     }

@@ -6,70 +6,70 @@
       "title": "Path sandbox (resolve_in_project)",
       "phase": 0,
       "status": "real",
-      "evidence": ["cargo test -p apk-forge-core security::paths"]
+      "evidence": ["cargo test -p catdot-core security::paths"]
     },
     {
       "id": "security-policy",
-      "title": "Policy engine (access levels × risk tiers)",
+      "title": "Policy engine (access levels Ã— risk tiers)",
       "phase": 0,
       "status": "real",
-      "evidence": ["cargo test -p apk-forge-core security::policy"]
+      "evidence": ["cargo test -p catdot-core security::policy"]
     },
     {
       "id": "security-redaction",
       "title": "Secret redaction filter",
       "phase": 0,
       "status": "real",
-      "evidence": ["cargo test -p apk-forge-core security::redaction"]
+      "evidence": ["cargo test -p catdot-core security::redaction"]
     },
     {
       "id": "storage-sqlite",
       "title": "SQLite + numbered migrations",
       "phase": 0,
       "status": "real",
-      "evidence": ["cargo test -p apk-forge-core storage"]
+      "evidence": ["cargo test -p catdot-core storage"]
     },
     {
       "id": "jobs-engine",
       "title": "Job engine (progress, cancel, kill-tree, recovery)",
       "phase": 0,
       "status": "real",
-      "evidence": ["cargo test -p apk-forge-core jobs"]
+      "evidence": ["cargo test -p catdot-core jobs"]
     },
     {
       "id": "toolchain-detect",
       "title": "Toolchain detection (read-only)",
       "phase": 0,
       "status": "real",
-      "evidence": ["cargo run -p apk-forge-core --example detect_toolchain"]
+      "evidence": ["cargo run -p catdot-core --example detect_toolchain"]
     },
     {
       "id": "ai-provider-trait",
       "title": "AI provider trait + mock + connection taxonomy",
       "phase": 0,
       "status": "real",
-      "evidence": ["cargo test -p apk-forge-core ai"]
+      "evidence": ["cargo test -p catdot-core ai"]
     },
     {
       "id": "ai-openai-compat",
       "title": "OpenAI-compatible SSE streaming adapter (real)",
       "phase": 0,
       "status": "real",
-      "evidence": ["cargo test -p apk-forge-core ai::openai_compat"]
+      "evidence": ["cargo test -p catdot-core ai::openai_compat"]
     },
     {
       "id": "secrets-credential-manager",
       "title": "Secret store (Windows Credential Manager, keyring v1)",
       "phase": 0,
       "status": "real",
-      "evidence": ["cargo test -p apk-forge-core security::secrets"]
+      "evidence": ["cargo test -p catdot-core security::secrets"]
     },
     {
       "id": "ts-rs-type-gen",
-      "title": "IPC type generation (ts-rs → shared-types)",
+      "title": "IPC type generation (ts-rs â†’ shared-types)",
       "phase": 0,
       "status": "real",
-      "evidence": ["cargo test -p apk-forge-core export_bindings", "pnpm typecheck"]
+      "evidence": ["cargo test -p catdot-core export_bindings", "pnpm typecheck"]
     },
     {
       "id": "app-shell",
@@ -83,28 +83,28 @@
       "title": "Settings persistence (SQLite, real IPC)",
       "phase": 0,
       "status": "real",
-      "evidence": ["cargo test -p apk-forge-core storage::settings", "apps/desktop Settings page"]
+      "evidence": ["cargo test -p catdot-core storage::settings", "apps/desktop Settings page"]
     },
     {
       "id": "system-check-ui",
       "title": "System check UI (real toolchain detect)",
       "phase": 0,
       "status": "real",
-      "evidence": ["apps/desktop SystemCheck page → toolchain_detect IPC"]
+      "evidence": ["apps/desktop SystemCheck page â†’ toolchain_detect IPC"]
     },
     {
       "id": "system-logs",
       "title": "System Logs panel (real error capture + copy)",
       "phase": 0,
       "status": "real",
-      "evidence": ["cargo test -p apk-forge-core logs", "apps/desktop Dashboard → logs_recent / log://entry"]
+      "evidence": ["cargo test -p catdot-core logs", "apps/desktop Dashboard â†’ logs_recent / log://entry"]
     },
     {
       "id": "ai-streaming-ui",
       "title": "AI connect + streaming chat UI (real)",
       "phase": 0,
       "status": "real",
-      "evidence": ["cargo test -p apk-forge-core ai::openai_compat", "apps/desktop AiChat page → ai://chat events"]
+      "evidence": ["cargo test -p catdot-core ai::openai_compat", "apps/desktop AiChat page â†’ ai://chat events"]
     },
     {
       "id": "i18n-skeleton",
@@ -137,28 +137,28 @@
     },
     {
       "id": "import-inspect",
-      "title": "Import & inspect (F1–F3): drag-drop import, ZIP entry tree, SHA-256, entry preview",
+      "title": "Import & inspect (F1â€“F3): drag-drop import, ZIP entry tree, SHA-256, entry preview",
       "phase": 2,
       "status": "real",
-      "evidence": ["cargo test -p apk-forge-core workspace", "apps/desktop Explorer → apk_import/apk_report IPC"]
+      "evidence": ["cargo test -p catdot-core workspace", "apps/desktop Explorer â†’ apk_import/apk_report IPC"]
     },
     {
       "id": "manual-edits",
       "title": "Manual text-entry edits with persisted patch file (F4, text entries)",
       "phase": 2,
       "status": "real",
-      "evidence": ["cargo test -p apk-forge-core workspace::read_entry", "apps/desktop EditorArea → apk_save_entry/apk_revert_entry + patches.json"]
+      "evidence": ["cargo test -p catdot-core workspace::read_entry", "apps/desktop EditorArea â†’ apk_save_entry/apk_revert_entry + patches.json"]
     },
     {
       "id": "build-sign-verify",
-      "title": "Build → align → sign → verify (F5) via zipalign/apksigner/keytool",
+      "title": "Build â†’ align â†’ sign â†’ verify (F5) via zipalign/apksigner/keytool",
       "phase": 2,
       "status": "real",
-      "evidence": ["cargo test -p apk-forge-core tools::build_tools", "apps/desktop Explorer → apk_build_sign IPC"]
+      "evidence": ["cargo test -p catdot-core tools::build_tools", "apps/desktop Explorer â†’ apk_build_sign IPC"]
     },
     {
       "id": "decode-apk-tools",
-      "title": "apktool/JADX decompile → smali/AXML editing (requires tools installed)",
+      "title": "apktool/JADX decompile â†’ smali/AXML editing (requires tools installed)",
       "phase": 3,
       "status": "disabled-planned",
       "evidence": [],

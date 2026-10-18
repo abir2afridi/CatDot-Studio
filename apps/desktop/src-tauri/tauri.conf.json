@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "APK Forge AI",
+  "productName": "CatDot Studio",
   "version": "0.1.0",
-  "identifier": "com.apkforge.app",
+  "identifier": "com.catdot.app",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "APK Forge AI",
+        "title": "CatDot Studio",
         "width": 1280,
         "height": 800,
         "minWidth": 960,

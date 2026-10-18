@@ -1,4 +1,4 @@
-# ADR 0007 — ts-rs export pipeline + shadcn/ui deferral
+﻿# ADR 0007 â€” ts-rs export pipeline + shadcn/ui deferral
 
 - Status: accepted
 - Date: 2026-10-17
@@ -9,7 +9,7 @@ Part D2 requires a single source of truth for IPC types, generated from the
 Rust core so the TypeScript frontend never hand-duplicates them. ts-rs writes
 bindings on `cargo test` for types annotated `#[ts(export)]`, but the default
 output directory is `./bindings` relative to the crate, and a per-type
-`export_to` path resolves against that base — nesting produced paths that
+`export_to` path resolves against that base â€” nesting produced paths that
 landed outside the intended folder (a `../..` off `./bindings` landed one
 level short of the workspace root). Phase 0 also needs a minimal, real app
 shell; the spec fixes Tailwind + shadcn/ui as the stack, but building screens
@@ -39,9 +39,9 @@ against shadcn components is Phase 1 work.
 
 ## Consequences
 
-- `cargo test -p apk-forge-core` (or `pnpm gen:types`) regenerates the TS
+- `cargo test -p catdot-core` (or `pnpm gen:types`) regenerates the TS
   types; CI can diff them. `packages/shared-types/src/generated` is the only
   place bindings live.
-- The frontend imports typed IPC shapes from `@apk-forge/shared-types`.
+- The frontend imports typed IPC shapes from `@catdot/shared-types`.
 - shadcn/ui is not yet present; Phase 1 adds it and migrates the shell's
   primitives. Phase 0 screens stay functional and test-backed.

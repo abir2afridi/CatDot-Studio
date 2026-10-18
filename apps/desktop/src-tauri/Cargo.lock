@@ -71,26 +71,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 
 [[package]]
-name = "apk-forge-core"
-version = "0.1.0"
-dependencies = [
- "futures-util",
- "keyring",
- "regex",
- "reqwest",
- "rusqlite",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "thiserror 2.0.21",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "ts-rs",
- "zip",
-]
-
-[[package]]
 name = "apple-native-keyring-store"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -499,6 +479,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "catdot-core"
+version = "0.1.0"
+dependencies = [
+ "futures-util",
+ "keyring",
+ "regex",
+ "reqwest",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "thiserror 2.0.21",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "ts-rs",
+ "zip",
+]
+
+[[package]]
 name = "cbc"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -889,7 +889,7 @@ dependencies = [
 name = "desktop"
 version = "0.1.0"
 dependencies = [
- "apk-forge-core",
+ "catdot-core",
  "serde",
  "serde_json",
  "tauri",

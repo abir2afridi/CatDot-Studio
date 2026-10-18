@@ -1,12 +1,12 @@
-[package]
-name = "apk-forge-core"
+﻿[package]
+name = "catdot-core"
 version = "0.1.0"
 edition = "2021"
 license = "UNLICENSED"
-description = "APK Forge AI core: security, storage, jobs, tools, ai (Phase 0 guardrails-first)"
+description = "CatDot Studio core: security, storage, jobs, tools, ai (Phase 0 guardrails-first)"
 
 [lib]
-name = "apk_forge_core"
+name = "catdot_core"
 path = "src/lib.rs"
 
 [dependencies]

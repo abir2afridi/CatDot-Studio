@@ -1,19 +1,19 @@
-//! Tauri commands (Part D3): request/response, validated server-side, return
+﻿//! Tauri commands (Part D3): request/response, validated server-side, return
 //! `Result<T, AppError>`. Long AI streams return a `streamId` and push chunks
 //! over the `ai://chat` event channel.
 
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
-use apk_forge_core::ai::{
+use catdot_core::ai::{
     AiStreamEvent, ChatMessage, OpenAICompat, OpenAICompatConfig, Provider, ProviderCapabilities,
 };
-use apk_forge_core::errors::{AppError, ErrorCode};
-use apk_forge_core::rusqlite;
-use apk_forge_core::security::SecretStore;
-use apk_forge_core::security::policy::{AccessLevel, check};
-use apk_forge_core::storage::{self, Setting};
-use apk_forge_core::tools::detect_toolchain;
+use catdot_core::errors::{AppError, ErrorCode};
+use catdot_core::rusqlite;
+use catdot_core::security::SecretStore;
+use catdot_core::security::policy::{AccessLevel, check};
+use catdot_core::storage::{self, Setting};
+use catdot_core::tools::detect_toolchain;
 use serde::Serialize;
 use serde_json::Value;
 use tauri::{AppHandle, Emitter, State};
@@ -21,7 +21,7 @@ use tauri::{AppHandle, Emitter, State};
 use crate::logs::LogEntry;
 use crate::AppState;
 
-const SECRETS_SERVICE: &str = "ApkForgeAI";
+const SECRETS_SERVICE: &str = "CatDotStudio";
 const AI_PROVIDER_KEY: &str = "ai.provider";
 
 /// Record a structured error into the tracing stream (captured by the System
@@ -95,7 +95,7 @@ pub fn secret_delete(state: State<'_, AppState>, account: String) -> Result<(), 
 // ---------- Toolchain (read-only detection) ----------
 
 #[tauri::command]
-pub async fn toolchain_detect() -> Result<apk_forge_core::tools::ToolchainReport, AppError> {
+pub async fn toolchain_detect() -> Result<catdot_core::tools::ToolchainReport, AppError> {
     tauri::async_runtime::spawn_blocking(detect_toolchain)
         .await
         .map_err(|e| {
@@ -124,7 +124,7 @@ fn build_provider_inner(state: &AppState) -> Result<OpenAICompat, AppError> {
             AppError::new(
                 ErrorCode::InvalidInput,
                 "no AI provider configured",
-                "What happened: no AI provider is set up yet. What to do: configure one in Settings → AI Providers.",
+                "What happened: no AI provider is set up yet. What to do: configure one in Settings â†’ AI Providers.",
             )
         })?;
     drop(db);
@@ -175,12 +175,12 @@ async fn ai_chat_start_inner(
     // Phase 0: free-text chat is the user's own message; access gate is L0 chat.
     let decision = check(
         AccessLevel::L2ReadWorkspace,
-        apk_forge_core::security::policy::Autonomy::ConfirmEach,
-        apk_forge_core::security::policy::RiskTier::NetworkSend,
+        catdot_core::security::policy::Autonomy::ConfirmEach,
+        catdot_core::security::policy::RiskTier::NetworkSend,
         false,
         true, // consent captured by the user pressing Send in the UI
     );
-    if !matches!(decision, apk_forge_core::security::policy::Decision::Allow) {
+    if !matches!(decision, catdot_core::security::policy::Decision::Allow) {
         return Err(AppError::new(
             ErrorCode::PolicyNeedsApproval,
             "network-send needs consent",

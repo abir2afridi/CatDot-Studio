@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -16,7 +16,7 @@ import {
   saveProviderConfig,
 } from "../lib/ai";
 import { useUi } from "../state/ui";
-import type { OpenAICompatConfig } from "@apk-forge/shared-types";
+import type { OpenAICompatConfig } from "@catdot/shared-types";
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation();
@@ -80,7 +80,7 @@ export function SettingsPage() {
     onSuccess: (caps) => {
       setStatus({
         kind: "ok",
-        msg: `${t("ai.connectionOk")} · streaming=${caps.streaming} tools=${caps.tools}`,
+        msg: `${t("ai.connectionOk")} Â· streaming=${caps.streaming} tools=${caps.tools}`,
       });
     },
     onError: (e) => {
@@ -123,7 +123,7 @@ export function SettingsPage() {
               English
             </Toggle>
             <Toggle active={locale === "bn"} onClick={() => applyLocale("bn")}>
-              বাংলা
+              à¦¬à¦¾à¦‚à¦²à¦¾
             </Toggle>
           </div>
         </Field>
@@ -174,7 +174,7 @@ export function SettingsPage() {
             <Input
               value={apiKey}
               type="password"
-              placeholder={hasKey ? "••••••••" : ""}
+              placeholder={hasKey ? "â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" : ""}
               onChange={setApiKey}
               mono
             />

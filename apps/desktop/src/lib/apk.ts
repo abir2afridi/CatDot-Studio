@@ -1,5 +1,5 @@
-// Typed IPC wrappers for the APK pipeline (Part F1–F5): import → edit →
-// export → sign. Errors reject as structured AppError (same `call` helper).
+﻿// Typed IPC wrappers for the APK pipeline (Part F1â€“F5): import â†’ edit â†’
+// export â†’ sign. Errors reject as structured AppError (same `call` helper).
 import type {
   ApkReport,
   ApkStatus,
@@ -7,7 +7,7 @@ import type {
   ExportResult,
   OpenedFile,
   PatchSummary,
-} from "@apk-forge/shared-types";
+} from "@catdot/shared-types";
 import { call } from "./ipc";
 
 export const apkImport = (sourcePath: string) =>

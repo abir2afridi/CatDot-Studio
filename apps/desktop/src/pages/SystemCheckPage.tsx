@@ -1,7 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+﻿import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toolchainDetect } from "../lib/ipc";
-import type { ToolInfo } from "@apk-forge/shared-types";
+import type { ToolInfo } from "@catdot/shared-types";
 
 function ToolRow({ tool, labels }: { tool: ToolInfo; labels: { found: string; missing: string; version: string; path: string; fixHint: string } }) {
   return (

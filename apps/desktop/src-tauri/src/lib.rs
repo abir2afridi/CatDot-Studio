@@ -1,6 +1,6 @@
-//! APK Forge AI desktop shell (Tauri 2). Exposes the app's own commands only
+﻿//! CatDot Studio desktop shell (Tauri 2). Exposes the app's own commands only
 //! (default-deny capabilities; no generic fs/shell/http plugin access from the
-//! webview — see Part E4). All heavy work lives in `apk-forge-core`.
+//! webview â€” see Part E4). All heavy work lives in `catdot-core`.
 
 mod apk_commands;
 mod commands;
@@ -9,9 +9,9 @@ mod logs;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, atomic::AtomicBool};
 
-use apk_forge_core::rusqlite;
-use apk_forge_core::security::secrets::KeyringSecretStore;
-use apk_forge_core::storage;
+use catdot_core::rusqlite;
+use catdot_core::security::secrets::KeyringSecretStore;
+use catdot_core::storage;
 use logs::{BufferLayer, LogBuffer};
 use tauri::Manager;
 use tracing_subscriber::layer::SubscriberExt;
@@ -36,11 +36,11 @@ pub fn run() {
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data_dir)?;
-            let db_path = data_dir.join("apkforge.db");
+            let db_path = data_dir.join("catdot.db");
             let conn = storage::open(&db_path)
                 .map_err(|e| Box::<dyn std::error::Error>::from(e.message))?;
             // Crash recovery: mark orphaned running/queued jobs as failed (D4).
-            let _ = apk_forge_core::jobs::recover_orphans(&conn);
+            let _ = catdot_core::jobs::recover_orphans(&conn);
 
             // Structured logging (ADR 0005): stdout + a ring buffer the UI can
             // read (System Logs panel). The buffer also emits `log://entry`.
@@ -61,7 +61,7 @@ pub fn run() {
                 logs,
             });
             app.manage(apk_commands::ApkState::default());
-            tracing::info!(target: "app", "APK Forge AI shell started");
+            tracing::info!(target: "app", "CatDot Studio shell started");
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

@@ -1,4 +1,4 @@
-// Typed IPC wrappers (Part D3). All errors surface as the structured `AppError`
+﻿// Typed IPC wrappers (Part D3). All errors surface as the structured `AppError`
 // shape; `invoke` rejects with that object, so we normalize it here.
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
@@ -9,7 +9,7 @@ import type {
   ProviderCapabilities,
   Setting,
   ToolchainReport,
-} from "@apk-forge/shared-types";
+} from "@catdot/shared-types";
 
 export class IpcError extends Error {
   readonly appError: AppError;

@@ -1,4 +1,4 @@
-//! System log capture (Part D4/D6). A bounded, thread-safe ring buffer of
+﻿//! System log capture (Part D4/D6). A bounded, thread-safe ring buffer of
 //! recent log entries (errors, warnings, info) that the shell can query over
 //! IPC and subscribe to for live updates on the `log://entry` channel.
 //! A `tracing` layer forwards any `tracing::error!/warn!/info!` into the
@@ -9,7 +9,7 @@ use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub use apk_forge_core::logs::LogEntry;
+pub use catdot_core::logs::LogEntry;
 use tauri::{AppHandle, Emitter};
 use tracing::{Event, Level, Subscriber};
 use tracing_subscriber::layer::{Context, Layer};

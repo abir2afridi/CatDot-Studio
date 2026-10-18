@@ -35,7 +35,7 @@ importers:
 
   apps/desktop:
     dependencies:
-      '@apk-forge/shared-types':
+      '@catdot/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
       '@tanstack/react-query':

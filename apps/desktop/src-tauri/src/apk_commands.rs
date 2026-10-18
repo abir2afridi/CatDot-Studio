@@ -1,4 +1,4 @@
-//! APK project commands (Part F1–F5): import → browse/edit → export → sign.
+﻿//! APK project commands (Part F1â€“F5): import â†’ browse/edit â†’ export â†’ sign.
 //! Edits persist in the workspace (`patches.json`); the original APK is never
 //! modified; exports/builds write NEW files. User-initiated actions ARE the
 //! approval (Conventions E7): only a policy `Deny` aborts them.
@@ -10,11 +10,11 @@ use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
 
-use apk_forge_core::apk_types::{ApkStatus, ExportResult, OpenedFile};
-use apk_forge_core::errors::{AppError, ErrorCode};
-use apk_forge_core::security::policy::{check, AccessLevel, Autonomy, Decision, RiskTier};
-use apk_forge_core::tools::{align_and_sign, ensure_keystore, tool_paths, BuildReport};
-use apk_forge_core::workspace::{
+use catdot_core::apk_types::{ApkStatus, ExportResult, OpenedFile};
+use catdot_core::errors::{AppError, ErrorCode};
+use catdot_core::security::policy::{check, AccessLevel, Autonomy, Decision, RiskTier};
+use catdot_core::tools::{align_and_sign, ensure_keystore, tool_paths, BuildReport};
+use catdot_core::workspace::{
     export_apk, import_apk, patch_summary, read_entry, report_of, sha256_str, ApkReport, Patch,
     PatchSummary, MAX_TEXT_BYTES,
 };
@@ -55,7 +55,7 @@ fn internal_err(msg: impl Into<String>) -> AppError {
     AppError::new(
         ErrorCode::Internal,
         msg.into(),
-        "What happened: an internal error occurred. What to do: restart APK Forge; details are in System Logs.",
+        "What happened: an internal error occurred. What to do: restart CatDot Studio; details are in System Logs.",
     )
 }
 
@@ -87,7 +87,7 @@ fn workspace_root(app: &AppHandle) -> Result<PathBuf, AppError> {
     Ok(ws)
 }
 
-/// User pressed the button ⇒ the confirmation is real; only `Deny` blocks.
+/// User pressed the button â‡’ the confirmation is real; only `Deny` blocks.
 fn require_allow(level: AccessLevel, tier: RiskTier) -> Result<(), AppError> {
     let d = check(level, Autonomy::ConfirmEach, tier, true, false);
     match d {
@@ -99,7 +99,7 @@ fn require_allow(level: AccessLevel, tier: RiskTier) -> Result<(), AppError> {
 
 fn with_db<R>(
     app: &AppHandle,
-    f: impl FnOnce(&apk_forge_core::rusqlite::Connection) -> Result<R, AppError>,
+    f: impl FnOnce(&catdot_core::rusqlite::Connection) -> Result<R, AppError>,
 ) -> Result<R, AppError> {
     let state: State<AppState> = app.state();
     let g = state.db.lock().map_err(|_| internal_err("db lock poisoned"))?;
@@ -172,7 +172,7 @@ pub fn apk_import(
         *g = Some(ApkSession { ws_root, base_sha: rep.sha256.clone(), patches });
     }
     with_db(&app, |db| {
-        apk_forge_core::storage::audit_insert(
+        catdot_core::storage::audit_insert(
             db,
             "user",
             "apk.import",
@@ -276,7 +276,7 @@ pub fn apk_export(apk_state: State<'_, ApkState>) -> Result<ExportResult, AppErr
     Ok(ExportResult { path: out.to_string_lossy().into_owned(), sha256: sha, size })
 }
 
-/// Full build: export → zipalign → apksigner (debug keystore auto-created).
+/// Full build: export â†’ zipalign â†’ apksigner (debug keystore auto-created).
 #[tauri::command]
 pub fn apk_build_sign(
     app: AppHandle,
@@ -304,7 +304,7 @@ pub fn apk_status(
     let g = apk_lock(&apk_state)?;
     let pending = match g.as_ref() {
         Some(s) => s.patches.len(),
-        None => apk_forge_core::workspace::sha256_file(&ws.join("original.apk"))
+        None => catdot_core::workspace::sha256_file(&ws.join("original.apk"))
             .map(|sha| load_patches(&ws, &sha).len())
             .unwrap_or(0),
     };

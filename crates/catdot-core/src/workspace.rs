@@ -1,6 +1,6 @@
-//! APK workspace engine (Part F1–F4, Phase 2 slice): import → inspect → patch
-//! → export. Reads the original APK via the `zip` crate. F0 rule: the original
-//! APK is never modified — import copies it into the workspace, every export
+﻿//! APK workspace engine (Part F1â€“F4, Phase 2 slice): import â†’ inspect â†’ patch
+//! â†’ export. Reads the original APK via the `zip` crate. F0 rule: the original
+//! APK is never modified â€” import copies it into the workspace, every export
 //! writes a NEW file. No apktool/JADX needed for these flows.
 
 use std::collections::HashMap;
@@ -268,7 +268,7 @@ mod tests {
     fn tmp_dir(tag: &str) -> PathBuf {
         let mut d = std::env::temp_dir();
         d.push(format!(
-            "apkforge-ws-{tag}-{}-{}",
+            "catdot-ws-{tag}-{}-{}",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -384,7 +384,7 @@ pub mod tests_util {
     pub fn make_test_zip(entries: &[(&str, &str)]) -> PathBuf {
         let mut d = std::env::temp_dir();
         d.push(format!(
-            "apkforge-zip-{}-{}.zip",
+            "catdot-zip-{}-{}.zip",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)

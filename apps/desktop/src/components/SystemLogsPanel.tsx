@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { LogEntry } from "@apk-forge/shared-types";
+import type { LogEntry } from "@catdot/shared-types";
 import { logsClear, logsRecent, onLogEntry } from "../lib/ipc";
 
 type LevelFilter = "all" | "error" | "warn";
@@ -57,7 +57,7 @@ export function SystemLogsPanel({ onClose }: { onClose: () => void }) {
     try {
       await navigator.clipboard.writeText(text);
       // Mark the copied row with a check until a different row is copied.
-      // (No auto-hide timer — `setTimeout` is banned by the reality audit and
+      // (No auto-hide timer â€” `setTimeout` is banned by the reality audit and
       // a persistent check is simpler UX.)
       if (id != null) setCopiedId(id);
     } catch {
@@ -148,7 +148,7 @@ export function SystemLogsPanel({ onClose }: { onClose: () => void }) {
                   onClick={() => void copy(entryToText(e), eid)}
                   className="shrink-0 rounded border border-border px-1.5 py-0.5 text-xs opacity-0 transition-opacity group-hover:opacity-100 hover:bg-surface"
                 >
-                  {copiedId === eid ? "✓" : t("logs.copy")}
+                  {copiedId === eid ? "âœ“" : t("logs.copy")}
                 </button>
               </div>
             );

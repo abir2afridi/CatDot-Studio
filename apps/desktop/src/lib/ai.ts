@@ -1,10 +1,10 @@
-// AI provider config helpers. The non-secret config lives in the settings DB
+﻿// AI provider config helpers. The non-secret config lives in the settings DB
 // under `ai.provider` (JSON); the API key lives only in the secret store.
-import type { OpenAICompatConfig } from "@apk-forge/shared-types";
+import type { OpenAICompatConfig } from "@catdot/shared-types";
 import { settingsGet, settingsSet, secretHas } from "./ipc";
 
 export const AI_PROVIDER_KEY = "ai.provider";
-export const AI_KEY_ACCOUNT = "apkforge-ai";
+export const AI_KEY_ACCOUNT = "catdot-ai";
 
 export const defaultProviderConfig: OpenAICompatConfig = {
   base_url: "https://api.openai.com/v1",

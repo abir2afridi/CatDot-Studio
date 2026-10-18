@@ -1,5 +1,5 @@
-[workspace]
-members = ["crates/apk-forge-core"]
+﻿[workspace]
+members = ["crates/catdot-core"]
 resolver = "2"
 
 [workspace.dependencies]

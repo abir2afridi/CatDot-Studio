@@ -1,4 +1,4 @@
-//! Diagnostics root (Part U3). Phase 0: real tracing init + redacted preview.
+﻿//! Diagnostics root (Part U3). Phase 0: real tracing init + redacted preview.
 //! In-app log viewer + rotation land in Phase 1; a redacting subscriber Layer
 //! is also Phase 1 (secrets are not logged today; bundle output is redacted).
 
@@ -21,7 +21,7 @@ pub fn init_tracing() {
 
 /// Build a redacted diagnostic preview (never includes secrets).
 pub fn diagnostic_preview(app_version: &str, os: &str, recent_logs: &[String]) -> String {
-    let mut out = format!("APK Forge AI {app_version} on {os}\n");
+    let mut out = format!("CatDot Studio {app_version} on {os}\n");
     for line in recent_logs.iter().take(50) {
         out.push_str(&redact(line));
         out.push('\n');

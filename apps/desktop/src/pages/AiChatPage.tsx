@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { aiChatCancel, aiChatStart, onChatEvent, type IpcError } from "../lib/ipc";
 import { useUi } from "../state/ui";
-import type { AiStreamEvent } from "@apk-forge/shared-types";
+import type { AiStreamEvent } from "@catdot/shared-types";
 
 interface ChatLine {
   role: "user" | "assistant";

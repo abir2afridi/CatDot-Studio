@@ -1,5 +1,5 @@
 {
-  "name": "apk-forge-ai",
+  "name": "catdot-studio",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     "lint": "eslint . --max-warnings 0",
     "test": "vitest run",
     "audit:reality": "node scripts/audit-reality.mjs",
-    "gen:types": "cargo test -p apk-forge-core export_bindings"
+    "gen:types": "cargo test -p catdot-core export_bindings"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
