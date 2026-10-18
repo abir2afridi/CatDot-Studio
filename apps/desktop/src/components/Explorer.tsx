@@ -73,7 +73,6 @@ export function Explorer() {
       setMessage({ text: describe(e), ok: false });
     }
   };
-  importMutRef.current = importMut;
 
   const exportMut = useMutation({
     mutationFn: () => apkExport(),
@@ -123,8 +122,8 @@ export function Explorer() {
     },
   });
 
-  // Drag & drop an APK onto the sidebar (real absolute paths from the shell).
-  const importMutRefForDrop = importMutRef;
+  // Drag & drop an APK anywhere on the sidebar (real absolute paths from the
+  // shell). Uses the same import mutation as the picker and the palette.
   useEffect(() => {
     let unlisten: (() => void) | null = null;
     void getCurrentWebviewWindow()
@@ -133,13 +132,13 @@ export function Explorer() {
         const paths = anyE.payload?.paths ?? anyE.paths;
         if (!paths?.length) return;
         const apkPath = paths.find((p) => p.toLowerCase().endsWith(".apk"));
-        if (apkPath) importMutRefForDrop.current?.mutate(apkPath);
+        if (apkPath != null && apkPath !== "") importMutRef.current?.mutate(apkPath);
       })
       .then((fn) => {
         unlisten = fn;
       });
     return () => unlisten?.();
-  }, [importMutRefForDrop]);
+  }, []);
 
   const tree = useMemo(
     () => buildTree(report.data?.entries.map((e) => e.path) ?? []),
@@ -163,7 +162,9 @@ export function Explorer() {
           >
             {importMut.isPending ? t("explorer.importing") : t("explorer.openApk")}
           </button>
-          <DropHint onPick={(p) => importMut.mutate(p)} />
+          <div className="rounded-lg border border-dashed border-border p-3 text-text-dim">
+            {t("explorer.dropHint")}
+          </div>
         </div>
       ) : (
         <>
@@ -182,7 +183,6 @@ export function Explorer() {
             >
               {t("explorer.openAnother")}
             </button>
-            <ActionButton label={t("explorer.reimport")} onPick={(p) => importMut.mutate(p)} />
             <button
               type="button"
               onClick={() => exportMut.mutate()}
@@ -216,70 +216,6 @@ export function Explorer() {
           {message.text}
         </p>
       )}
-      {buildMut.data && (
-        <ul className="mt-2 space-y-1 px-1 text-[11px] text-text-dim">
-          {buildMut.data.steps.map((s) => (
-            <li key={s.step} className={s.exit_code === 0 ? "text-success" : "text-danger"}>
-              {s.step}: {s.exit_code}
-            </li>
-          ))}
-          {buildMut.data.aligned_verified && (
-            <li className="text-success">✓ {t("explorer.alignedVerified")}</li>
-          )}
-          {buildMut.data.signature_verified && (
-            <li className="text-success">✓ {t("explorer.signatureVerified")}</li>
-          )}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function DropHint({ onPick }: { onPick: (path: string) => void }) {
-  const { t } = useTranslation();
-  const [value, setValue] = useState("");
-  return (
-    <div className="rounded-lg border border-dashed border-border p-3 text-text-dim">
-      <p className="mb-2">{t("explorer.dropHint")}</p>
-      <div className="flex gap-1">
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="D:\\apps\\sample.apk"
-          className="min-w-0 flex-1 rounded-md bg-bg px-2 py-1 text-xs"
-        />
-        <button
-          type="button"
-          onClick={() => value.trim() !== "" && onPick(value.trim())}
-          className="rounded-md bg-accent/20 px-2 text-accent text-xs hover:bg-accent/30"
-        >
-          {t("explorer.import")}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ActionButton({ label, onPick }: { label: string; onPick: (path: string) => void }) {
-  const [value, setValue] = useState("");
-  return (
-    <div className="flex gap-1">
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder={label}
-        className="min-w-0 flex-1 rounded-md bg-bg px-2 py-1 text-xs"
-        aria-label={label}
-      />
-      <button
-        type="button"
-        onClick={() => value.trim() !== "" && onPick(value.trim())}
-        className="rounded-md bg-surface-2 px-2 text-xs hover:bg-surface-2/70"
-      >
-        …
-      </button>
     </div>
   );
 }

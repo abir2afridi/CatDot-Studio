@@ -25,7 +25,6 @@ export function StatusBar() {
   const activeFile = useUi((s) => s.activeFile);
   const notice = useUi((s) => s.notice);
   const setNotice = useUi((s) => s.setNotice);
-  const explorerOpen = useUi((s) => s.explorerOpen);
   const bottomOpen = useUi((s) => s.bottomOpen);
   const toggleBottom = useUi((s) => s.toggleBottom);
   const setActiveBottomTab = useUi((s) => s.setActiveBottomTab);
@@ -120,11 +119,11 @@ export function StatusBar() {
       <span className="h-3.5 w-px bg-border" aria-hidden="true" />
       <button
         type="button"
-        onClick={() => useUi.getState().toggleExplorer()}
-        className={`hover:text-text ${explorerOpen ? "" : "opacity-70"}`}
-        title="Ctrl+B"
+        onClick={() => useUi.getState().setPaletteOpen(true)}
+        className="hover:text-text"
+        title="Ctrl+Shift+P"
       >
-        {t("nav.explorer")}
+        {t("palette.openStatusBar")}
       </button>
       {notice != null && (
         <span

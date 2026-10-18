@@ -20,12 +20,10 @@ export const en = {
   explorer: {
     title: "APK Explorer",
     dropHint: "Drag an APK file here, or type its path.",
-    import: "Import",
     openApk: "Open APK…",
     openAnother: "Open another APK…",
     importing: "Importing…",
     imported: "Imported ({{count}} files)",
-    reimport: "Re-import path",
     export: "Export unsigned APK",
     exported: "Exported: {{name}}",
     buildSign: "Build Â· align Â· sign",
@@ -54,8 +52,7 @@ export const en = {
     signed: "signed build ready",
   },
   dashboard: {
-    title: "Dashboard",
-    subtitle: "Open a project or run a system check to get started.",
+
     systemOk: "Toolchain ready",
     systemMissing: "Some tools are missing",
   },
@@ -100,7 +97,6 @@ export const en = {
     connectionFailed: "Connection failed",
   },
   logs: {
-    title: "System Logs",
     filterAll: "All",
     filterErrors: "Errors",
     filterWarnings: "Warnings",
@@ -169,12 +165,10 @@ export const bn: typeof en = {
   explorer: {
     title: "à¦à¦ªà¦¿à¦•à§‡ à¦à¦•à§à¦¸à¦ªà§à¦²à§‹à¦°à¦¾à¦°",
     dropHint: "à¦à¦•à¦Ÿà¦¿ à¦à¦ªà¦¿à¦•à§‡ à¦«à¦¾à¦‡à¦² à¦à¦–à¦¾à¦¨à§‡ à¦¡à§à¦°à§à¦¯à¦¾à¦— à¦•à¦°à§à¦¨, à¦…à¦¥à¦¬à¦¾ à¦ªà¦¾à¦¥ à¦²à¦¿à¦–à§à¦¨à¥¤",
-    import: "à¦‡à¦®à¦ªà§‹à¦°à§à¦Ÿ",
     openApk: "à¦à¦ªà¦¿à¦•à§‡ à¦–à§à¦²à§à¦¨…",
     openAnother: "à¦…à¦¨à§à¦¯ à¦à¦•à¦Ÿà¦¿ à¦à¦ªà¦¿à¦•à§‡ à¦–à§à¦²à§à¦¨…",
     importing: "à¦‡à¦®à¦ªà§‹à¦°à§à¦Ÿ à¦¹à¦šà§à¦›à§‡…",
     imported: "à¦‡à¦®à¦ªà§‹à¦°à§à¦Ÿ à¦¹à¦¯à¦¼à§‡à¦›à§‡ ({{count}} à¦«à¦¾à¦‡à¦²)",
-    reimport: "à¦†à¦¬à¦¾à¦° à¦‡à¦®à¦ªà§‹à¦°à§à¦Ÿ à¦ªà¦¾à¦¥",
     export: "à¦¸à¦¾à¦‡à¦¨à¦¬à¦¿à¦¹à§€à¦¨ à¦à¦ªà¦¿à¦•à§‡ à¦à¦•à§à¦¸à¦ªà§‹à¦°à§à¦Ÿ",
     exported: "à¦à¦•à§à¦¸à¦ªà§‹à¦°à§à¦Ÿ à¦¹à¦¯à¦¼à§‡à¦›à§‡: {{name}}",
     buildSign: "à¦¬à¦¿à¦²à§à¦¡ Â· à¦…à§à¦¯à¦¾à¦²à¦¾à¦‡à¦¨ Â· à¦¸à¦¾à¦‡à¦¨",
@@ -203,8 +197,7 @@ export const bn: typeof en = {
     signed: "à¦¸à¦¾à¦‡à¦¨ à¦•à¦°à¦¾ à¦¬à¦¿à¦²à§à¦¡ à¦ªà§à¦°à¦¸à§à¦¤à§à¦¤",
   },
   dashboard: {
-    title: "à¦¡à§à¦¯à¦¾à¦¶à¦¬à§‹à¦°à§à¦¡",
-    subtitle: "à¦¶à§à¦°à§ à¦•à¦°à¦¤à§‡ à¦à¦•à¦Ÿà¦¿ à¦ªà§à¦°à¦œà§‡à¦•à§à¦Ÿ à¦–à§à¦²à§à¦¨ à¦¬à¦¾ à¦¸à¦¿à¦¸à§à¦Ÿà§‡à¦® à¦ªà¦°à§€à¦•à§à¦·à¦¾ à¦šà¦¾à¦²à¦¾à¦¨à¥¤",
+
     systemOk: "à¦Ÿà§à¦²à¦šà§‡à¦‡à¦¨ à¦ªà§à¦°à¦¸à§à¦¤à§à¦¤",
     systemMissing: "à¦•à¦¿à¦›à§ à¦Ÿà§à¦² à¦¨à§‡à¦‡",
   },
@@ -249,7 +242,7 @@ export const bn: typeof en = {
     connectionFailed: "à¦¸à¦‚à¦¯à§‹à¦— à¦¬à§à¦¯à¦°à§à¦¥",
   },
   logs: {
-    title: "à¦¸à¦¿à¦¸à§à¦Ÿà§‡à¦® à¦²à¦—",
+
     filterAll: "à¦¸à¦¬",
     filterErrors: "à¦¤à§à¦°à§à¦Ÿà¦¿",
     filterWarnings: "à¦¸à¦¤à¦°à§à¦•à¦¤à¦¾",
