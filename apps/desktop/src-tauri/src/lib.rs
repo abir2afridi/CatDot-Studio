@@ -82,6 +82,7 @@ pub fn run() {
             apk_commands::apk_open_entry,
             apk_commands::apk_save_entry,
             apk_commands::apk_revert_entry,
+            apk_commands::apk_revert_all,
             apk_commands::apk_patch_summary,
             apk_commands::apk_export,
             apk_commands::apk_build_sign,

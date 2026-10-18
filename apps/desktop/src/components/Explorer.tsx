@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useTranslation } from "react-i18next";
-import { apkExport, apkBuildSign, apkImport, apkReport } from "../lib/apk";
+import { apkExport, apkBuildSign, apkImport, apkReport, apkRevertAll, apkPatchSummary } from "../lib/apk";
 import { IpcError } from "../lib/ipc";
 import { useUi } from "../state/ui";
 
@@ -70,6 +70,27 @@ export function Explorer() {
     onError: (e) => setMessage({ text: describe(e), ok: false }),
   });
 
+  const revertAllMut = useMutation({
+    mutationFn: () => apkRevertAll(),
+    onSuccess: (res) => {
+      setMessage({ text: t("explorer.revertAllDone"), ok: true });
+      void queryClient.invalidateQueries({ queryKey: ["apk"] });
+      setShouldShowRevertAll(res.count > 0);
+    },
+    onError: (e) => setMessage({ text: describe(e), ok: false }),
+  });
+
+  const patches = useQuery({
+    queryKey: ["apk", "patches"],
+    queryFn: apkPatchSummary,
+    retry: false,
+  });
+
+  // Track visibility locally so the button disappears right after a real revert.
+  const [shouldShowRevertAll, setShouldShowRevertAll] = useState(true);
+  const pendingCount = patches.data?.count ?? 0;
+  const showRevertAll = shouldShowRevertAll && pendingCount > 0;
+
   const buildMut = useMutation({
     mutationFn: () => apkBuildSign(),
     onSuccess: (res) => {
@@ -118,7 +139,12 @@ export function Explorer() {
       ) : (
         <>
           <TreeNodeView node={tree} depth={0} onOpen={openFile} />
-          <div className="mt-4 flex flex-col gap-1">
+          {pendingCount > 0 && (
+            <p className="mt-2 px-1 text-[11px] text-accent" aria-live="polite">
+              {t("status.pendingEdits", { count: pendingCount })}
+            </p>
+          )}
+          <div className="mt-2 flex flex-col gap-1">
             <ActionButton label={t("explorer.reimport")} onPick={(p) => importMut.mutate(p)} />
             <button
               type="button"
@@ -135,6 +161,16 @@ export function Explorer() {
             >
               {buildMut.isPending ? t("explorer.building") : t("explorer.buildSign")}
             </button>
+            {showRevertAll && (
+              <button
+                type="button"
+                disabled={revertAllMut.isPending}
+                onClick={() => revertAllMut.mutate()}
+                className="rounded-md bg-danger/15 px-3 py-1.5 text-left text-danger hover:bg-danger/25 disabled:opacity-50"
+              >
+                {revertAllMut.isPending ? "…" : t("explorer.revertAll")}
+              </button>
+            )}
           </div>
         </>
       )}
@@ -150,6 +186,12 @@ export function Explorer() {
               {s.step}: {s.exit_code}
             </li>
           ))}
+          {buildMut.data.aligned_verified && (
+            <li className="text-success">✓ {t("explorer.alignedVerified")}</li>
+          )}
+          {buildMut.data.signature_verified && (
+            <li className="text-success">✓ {t("explorer.signatureVerified")}</li>
+          )}
         </ul>
       )}
     </div>

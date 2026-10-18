@@ -255,6 +255,17 @@ pub fn apk_revert_entry(
     Ok(patch_summary(&session_pairs(s)))
 }
 
+/// Revert every pending edit at once (the workspace returns to the
+/// pristine imported state; the exported/signed outputs stay until rebuilt).
+#[tauri::command]
+pub fn apk_revert_all(apk_state: State<'_, ApkState>) -> Result<PatchSummary, AppError> {
+    let mut g = apk_lock(&apk_state)?;
+    let s = g.as_mut().ok_or_else(no_session_err)?;
+    s.patches.clear();
+    save_patches(s, &s.base_sha)?;
+    Ok(patch_summary(&session_pairs(s)))
+}
+
 #[tauri::command]
 pub fn apk_patch_summary(apk_state: State<'_, ApkState>) -> Result<PatchSummary, AppError> {
     let g = apk_lock(&apk_state)?;

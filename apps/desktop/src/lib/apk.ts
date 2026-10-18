@@ -24,6 +24,8 @@ export const apkSaveEntry = (entryPath: string, content: string) =>
 export const apkRevertEntry = (entryPath: string) =>
   call<PatchSummary>("apk_revert_entry", { entryPath });
 
+export const apkRevertAll = () => call<PatchSummary>("apk_revert_all");
+
 export const apkPatchSummary = () => call<PatchSummary>("apk_patch_summary");
 
 export const apkExport = () => call<ExportResult>("apk_export");

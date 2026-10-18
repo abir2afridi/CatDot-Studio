@@ -29,6 +29,10 @@ export const en = {
     building: "Buildingâ€¦",
     built: "Signed APK ready",
     buildFailed: "Build failed â€” see System Logs",
+    revertAll: "Revert all edits",
+    revertAllDone: "All pending edits reverted",
+    alignedVerified: "Alignment verified",
+    signatureVerified: "Signature verified",
   },
   editor: {
     welcome: "Open a file from the APK Explorer to edit it, or drag a new APK in.",
@@ -134,6 +138,10 @@ export const bn: typeof en = {
     building: "à¦¬à¦¿à¦²à§à¦¡ à¦¹à¦šà§à¦›à§‡â€¦",
     built: "à¦¸à¦¾à¦‡à¦¨ à¦•à¦°à¦¾ à¦à¦ªà¦¿à¦•à§‡ à¦ªà§à¦°à¦¸à§à¦¤à§à¦¤",
     buildFailed: "à¦¬à¦¿à¦²à§à¦¡ à¦¬à§à¦¯à¦°à§à¦¥ â€” à¦¸à¦¿à¦¸à§à¦Ÿà§‡à¦® à¦²à¦— à¦¦à§‡à¦–à§à¦¨",
+    revertAll: "à¦¸à¦¬ à¦¸à¦®à§à¦ªà¦¾à¦¦à¦¨à¦¾ à¦¬à¦¾à¦¤à¦¿à¦²",
+    revertAllDone: "à¦¸à¦¬ à¦¸à¦®à§à¦ªà¦¾à¦¦à¦¨à¦¾ à¦¬à¦¾à¦¤à¦¿à¦² à¦¹à¦¯à¦¼à§‡à¦›à§‡",
+    alignedVerified: "à¦…à§à¦¯à¦¾à¦²à¦¾à¦‡à¦¨ à¦¯à¦¾à¦šà¦¾à¦‡ à¦•à¦°à¦¾ à¦¹à¦¯à¦¼à§‡à¦›à§‡",
+    signatureVerified: "à¦¸à¦¿à¦—à¦¨à§‡à¦šà¦¾à¦° à¦¯à¦¾à¦šà¦¾à¦‡ à¦•à¦°à¦¾ à¦¹à¦¯à¦¼à§‡à¦›à§‡",
   },
   editor: {
     welcome: "à¦à¦ªà¦¿à¦•à§‡ à¦à¦•à§à¦¸à¦ªà§à¦²à§‹à¦°à¦¾à¦° à¦¥à§‡à¦•à§‡ à¦à¦•à¦Ÿà¦¿ à¦«à¦¾à¦‡à¦² à¦–à§à¦²à§‡ à¦¸à¦®à§à¦ªà¦¾à¦¦à¦¨à¦¾ à¦•à¦°à§à¦¨, à¦…à¦¥à¦¬à¦¾ à¦¨à¦¤à§à¦¨ à¦à¦ªà¦¿à¦•à§‡ à¦¡à§à¦°à§à¦¯à¦¾à¦— à¦•à¦°à§à¦¨à¥¤",
