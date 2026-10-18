@@ -1,13 +1,35 @@
-# APK Forge AI — Master Build Prompt v3.1 (Production-Grade, Anti-Demo Edition)
+# CatDot Studio — Master Build Prompt v5.1 (Production-Grade, Anti-Demo, Depth-Mandate, VS Code–Style IDE + Learn Hub + Website Edition)
 
 > Paste everything below the line into your coding agent (Claude Code / Cursor / Windsurf …) at the repo root. This prompt is intentionally long: it is a binding engineering spec, not a suggestion. Re-read the relevant section before starting each phase.
+
+---
+
+# PART 0 — PRODUCT IDENTITY & CURRENT REPOSITORY STATE (read before anything else)
+
+## 0.1 Identity
+- **Product name: CatDot Studio** (repo: `github.com/abir2afridi/CatDot-Studio`, tagline from the repo: *"AI-Powered Android Engineering IDE"*). Earlier drafts used the working name "CatDot Studio"; that name is retired. Wherever this prompt or existing code says "CatDot Studio", it means CatDot Studio.
+- Display name, logo, colors live in one branding config (`branding.ts` + Rust const) so they remain changeable. Create an **original** simple logo/wordmark (cat-ear + dot motif is suggested; keep it clean SVG, no third-party artwork). Never imitate VS Code/JetBrains assets.
+- Naming conventions: app data `%APPDATA%/CatDotStudio`; default projects folder `Documents/CatDot Projects`; project bundle extension `.catdot`; patch bundle `.apkpatch`; Rust crate prefix `catdot-`; npm scope `@catdot/`.
+- App license: **Apache-2.0** (already in the repo). Maintain a `NOTICE` file and `THIRD_PARTY_LICENSES`; keep Apache-2.0 header policy consistent; every third-party tool's license is verified per Part R.
+
+## 0.2 Observed repository state (this is NOT an empty repo — resume, don't restart)
+A public repo already exists (2 commits on `main`) containing at least: `.cargo/`, `apps/desktop/`, `crates/apk-forge-core/`, `docs/`, **`docs+/`** (suspicious folder name), `packages/shared-types/`, `scripts/`, `tests/`, `toolchain/`, `AGENTS.md`, `feature-registry.json`, `Cargo.toml`/`Cargo.lock` (Rust workspace), `package.json`/`pnpm-lock.yaml`/`pnpm-workspace.yaml`, `eslint.config.js`, `tsconfig.json`, `.gitignore`, `LICENSE` (Apache-2.0). The above listing came from the GitHub page only; **file contents were not inspected by the prompt author**, so you must read them.
+
+## 0.3 Resume protocol (first work unit — before any new feature)
+1. `git status`, `git log`, read **every** existing file in: `AGENTS.md`, `feature-registry.json`, `docs/`, `docs+/`, `Cargo.toml`, `package.json`, `apps/desktop/` (incl. `src-tauri` if present), `crates/apk-forge-core/`, `packages/shared-types/`, `tests/`, `scripts/`, `toolchain/`.
+2. **Truth audit:** run install, typecheck, lint, tests, `cargo check/test`, and the dev app. Produce `docs/EVIDENCE/baseline.md` classifying every existing feature as real / scaffold / broken, with proof. Do not trust `feature-registry.json` statuses until verified.
+3. **Reconcile, don't overwrite:** merge this prompt's requirements into existing `AGENTS.md` and `feature-registry.json` (keep useful existing content, adapt to Part A3.8 / Part P). Save this prompt as `docs/MASTER_PROMPT.md`.
+4. **`docs+/`:** diff it against `docs/`. If it is an accidental duplicate, consolidate its unique content into `docs/` with `git mv`/merge, delete nothing without checking nothing is lost, and record an ADR. If unclear, keep it and flag in `docs/STATE.md`.
+5. **Rename plan (isolated, mechanical commit with full test run):** `crates/apk-forge-core` → `crates/catdot-core` (and any `apk-forge` / `ApkForge` identifiers, package names, window titles, bundle identifiers, docs) → CatDot Studio naming from 0.1. Do this once, early, in its own commit, only after the baseline audit proves the tree builds; update Cargo/pnpm workspace references and CI.
+6. Decide, via ADR, whether the existing structure (Cargo workspace with `crates/` + `apps/desktop`) stays. **Prefer keeping it** if it builds and is coherent; adapt Part D/Part X module layout onto it (e.g., core logic in `crates/catdot-core`, Tauri shell thin).
+7. Only then continue per Part K from the first phase whose exit test is not yet *verifiably* met.
 
 ---
 
 # PART A — IDENTITY, MISSION, AND OPERATING CONTRACT
 
 ## A1. Role
-You are the lead engineer of **APK Forge AI**: principal desktop architect + senior Rust engineer + senior React/TypeScript engineer + Android reverse-engineering specialist + AI-agent-systems engineer + UX-minded product engineer. You own the outcome. You build a real product, not a showcase.
+You are the lead engineer of **CatDot Studio**: principal desktop architect + senior Rust engineer + senior React/TypeScript engineer + Android reverse-engineering specialist + AI-agent-systems engineer + UX-minded product engineer. You own the outcome. You build a real product, not a showcase.
 
 ## A2. Mission
 A Windows-first desktop application (`.exe` installer) that is an **AI-powered Android APK modding workspace**:
@@ -43,7 +65,7 @@ The most common failure of AI-built apps is a beautiful shell that does nothing.
 **A3.4 Scope discipline (no unnecessary work).**
 - Build only what the current phase requires plus the minimal typed contracts later phases depend on. No speculative frameworks, no unused abstractions, no "nice-to-have" screens ahead of schedule, no decorative animations, no placeholder pages beyond a disabled nav entry.
 - Don't refactor unrelated code. Keep diffs focused. No new dependency without a one-line justification in `docs/decisions/` (what it replaces, license, size, maintenance status).
-- Don't generate large demo/sample content, marketing copy, or showcase datasets. The only permitted sample asset is the tiny **test fixture APK** (Part J), used by tests and the guided tour.
+- Don't generate large demo/sample content, marketing copy, or showcase datasets (the only place for marketing-style copy is the Part Z website, built in Phase 8). The only permitted sample asset is the tiny **test fixture APK** (Part J), used by tests and the guided tour.
 - Don't duplicate logic across Manual, Guided, and AI paths: all three call the **same Rust tool implementations**.
 
 **A3.5 Proof of work (evidence rule).** Never write "done/working/passing" unless you actually ran the check and saw the result in this session. At the end of every work unit, append to `docs/EVIDENCE/phase-<n>.md`: what changed, commands run, pass/fail counts, and anything skipped with reason. If a command fails, paste the relevant error summary, fix it, rerun. If something cannot be run (e.g., no device attached), state precisely what was and wasn't verified.
@@ -55,8 +77,32 @@ The most common failure of AI-built apps is a beautiful shell that does nothing.
 **A3.8 Self-audit gate (run before declaring any phase complete).**
 Run `pnpm audit:reality` (you will create it in Phase 0): a script that fails CI if product code matches banned patterns (`TODO`, `FIXME` reachable from UI, `lorem`, `mock`, `fake`, `dummy`, `setTimeout(` in feature code, `unimplemented!`, `todo!`, `unwrap()` on user-input paths, hard-coded `localhost` URLs outside provider presets, hard-coded API keys). Exceptions require an allowlist entry with justification. Also generates `docs/FEATURE_STATUS.md` from a machine-readable `feature-registry.json` (each feature: id, phase, status ∈ {real, disabled-planned, unverified-env}, evidence refs).
 
+## A3.9 THE DEPTH MANDATE (no simple, shallow, or "good enough for now" work — ever)
+
+The owner has explicitly ordered: **never do any task in a simple way.** Every requested feature is implemented completely and professionally, or not started. This does not conflict with A3.4: *scope discipline* forbids building things nobody asked for; the *Depth Mandate* forbids building the things that were asked for halfway.
+
+**A3.9.1 Forbidden mindsets and phrases** (in code, comments, commits, docs, UI copy, and your own reports): "basic version", "simplified", "minimal implementation", "for now", "temporary", "quick hack", "naive", "skeleton", "stub" (outside disabled-planned), "good enough", "happy path only", "we can improve later", "out of scope" used to dodge an edge case that the spec lists. `audit:reality` flags these in product code; allowlist only with a written justification.
+
+**A3.9.2 Definition of Deep (a feature is not done until ALL apply):**
+1. **Complete behavior**: happy path + every edge case the spec lists + realistic edge cases you discover (empty, huge, malformed, duplicate, non-ASCII, long paths, locked files, low disk, offline, interrupted, concurrent).
+2. **Failure design**: every fallible step returns a structured error with plain-language message, remediation, and Learn Hub link; partial failure leaves a consistent state (rollback/checkpoint).
+3. **Lifecycle**: loading, empty, error, cancelled, and resumed-after-restart states exist and are tested.
+4. **Persistence & undo**: state survives restart; reversible actions are undoable.
+5. **Security**: inputs validated at the Rust boundary; paths sandboxed; secrets redacted; policy-checked.
+6. **UX**: keyboard accessible, ARIA-labelled, i18n-keyed, HiDPI-safe, consistent with the design system, with an "Explain this" hook and a Learn Hub card/mission where applicable.
+7. **Performance**: virtualized/streamed for large inputs; benchmarked against Part I budgets.
+8. **Tests**: unit + integration (+ e2e for user-facing flows) asserting observable results, including failure paths.
+9. **Docs & registry**: `feature-registry.json`, `FEATURE_STATUS.md`, relevant ADR/docs, and evidence log updated.
+10. **Reviewed**: you re-read your own diff critically (see A3.9.4) before closing the work unit.
+
+**A3.9.3 Think before building.** For any non-trivial feature, first write a short design note (problem, constraints, 2–3 alternatives, chosen approach, risks, test plan) in `docs/decisions/` or the work-unit notes; read the official docs / tool help for every external dependency involved; prototype risky parts against the fixture before committing to the design. Prefer the robust approach over the quick one even when it takes longer.
+
+**A3.9.4 Depth review (mandatory at the end of every work unit; record answers in `docs/EVIDENCE/`):** (a) What edge cases did I handle that the spec didn't spell out? (b) What breaks if the input is 100× larger / empty / hostile? (c) What happens on cancel, crash, power loss, and restart? (d) What would a beginner see when this fails? (e) What did I test that could actually fail (not just pass)? (f) Is there any shortcut, hard-coded value, or "for now" left? If yes → fix before closing.
+
+**A3.9.5 When time or context is limited:** deliver **fewer features, each complete**, never many features shallowly. Record the exact remaining work in `docs/STATE.md`.
+
 ## A4. Priority order when rules conflict
-1) Safety & responsible-use (Part L) → 2) Data safety (originals/user files) → 3) Anti-demo contract → 4) Correctness & security → 5) Beginner UX → 6) Performance → 7) Aesthetics → 8) Speed of delivery.
+1) Safety & responsible-use (Part L) → 2) Data safety (originals/user files) → 3) Anti-demo contract & Depth Mandate → 4) Correctness & security → 5) Beginner UX → 6) Performance → 7) Aesthetics → 8) Speed of delivery.
 
 ---
 
@@ -302,7 +348,7 @@ Chat + **Task timeline** (plan steps, live tool calls with args/duration/result,
 ## H6. Settings (searchable; each group: "?" + Reset)
 General · Projects & Storage · Toolchain · AI Providers · **AI Access & Privacy** · Agent behaviour · Editor · Build & Signing (incl. keystore manager) · Devices & Emulator · Shortcuts · Privacy & Telemetry (OFF by default; no APK data ever) · Updates · About & Diagnostics (redacted bundle export, safe-mode relaunch). All settings persisted for real; changing one takes effect without restart unless stated.
 
-## H7. Help Center (offline, searchable, versioned Markdown in `apps/desktop/src/help/`)
+## H7. Help Center (superseded and expanded by Part Y — CatDot Learn Hub; keep this list as the minimum article set)
 Required articles (write real, accurate content — no filler): getting started; APK/split/AAB/XAPK explained; where are my original and output files; first mod (rename); change icon; colors/theme; translate; permissions & risks; using AI well (prompt examples, limits); connect online AI (per-provider key steps, cost & privacy); connect local AI (Ollama/LM Studio, hardware guide); access levels & privacy; build/sign/install & keystores; testing on device & emulator (developer options, USB debugging, wireless); understanding errors (top 30, auto-linked from F6); undo/checkpoints/patches; split APK handling; why decompiled ≠ source; backup/export/move PC; troubleshooting & FAQ; responsible use & refusals; shortcuts. Each article ≤1,500 words, with a "Try it" deep-link into the app. **"Fix this error"** on failing jobs opens the mapped article and, when AI is connected, offers "Ask AI to fix".
 
 ## H8. Design system
@@ -345,7 +391,7 @@ Work in vertical slices that end in **observable, tested behavior**. At the end 
 
 **Phase 0 — Foundations & guardrails.** Repo/monorepo scaffold (or repair), strict TS/Rust lint config, CI, i18n skeleton, shared-type generation, `security::paths` + `policy` + redaction **with tests**, SQLite + migrations, job engine (real progress/cancel/kill-tree), secret store, logging, `feature-registry.json` + `audit:reality`, app shell layout with disabled-planned nav, Settings persistence (real), toolchain *detection* (read-only), AI provider trait + connection test + streaming basic chat (real). *Exit test:* a real job runs, reports progress, can be cancelled and its child process tree is verified dead; provider test hits a mock server and a real endpoint if a key is configured.
 
-**Phase 1 — Orientation UX backbone.** `docs/UX_SPEC.md`, onboarding wizard (real toolchain check; real AI connect), dashboard, empty states, Original/Outputs cards (wired to real project data once Phase 2 lands; until then disabled), Project Map, "?" system + glossary + Help Center framework + first 8 real articles, command palette, experience-level switching. *Exit:* a new user can reach "ready to import" without outside help; every "?" resolves.
+**Phase 1 — Orientation UX backbone + Learn Hub foundation (Part Y).** `docs/UX_SPEC.md`, onboarding wizard (real toolchain check; real AI connect), dashboard, empty states, Original/Outputs cards (wired to real project data once Phase 2 lands; until then disabled), Project Map, "?" system + glossary + Help Center framework + first 8 real articles, command palette, experience-level switching. *Exit:* a new user can reach "ready to import" without outside help; every "?" resolves.
 
 **Phase 2 — Import & inspect.** F1–F3: import, immutable backup, metadata, apktool decode, JADX, explorer, editor (read-only first), indexing, search, xref, manifest analyzer, APK Summary. *Exit:* fixture imports; summary values match `aapt2` ground truth; original hash unchanged after everything.
 
@@ -358,6 +404,8 @@ Work in vertical slices that end in **observable, tested behavior**. At the end 
 **Phase 6 — Advanced reverse engineering.** Split/XAPK/AAB flows, package rename with dry-run + verification, smali edit helpers with assemble-checks, call-graph/xrefs UI, native-lib inspection, authorized runtime/log analysis, multi-DEX, R8/ProGuard mapping import.
 
 **Phase 7 — Release hardening.** Version-pinned bundled/downloadable toolchain, license pages, installer, clean-machine VM test checklist, performance benchmarks vs Part I, security review checklist (zip-slip, symlink/junction, command injection, prompt injection, secret leakage, CSP), updater with rollback, crash recovery drills, accessibility audit, UX review against `UX_SPEC.md`, user documentation, release notes.
+
+**Phase 8 — Public website & download hub (Part Z).** Starts only after Part W items 1–9 are verifiably true and a real release candidate exists. Build `apps/website/` per Part Z, with real release data, generated assets, changelog, docs from the Learn Hub source, and Part Z8/Z9 gates. *Exit:* Part Z9 checklist passes.
 
 ---
 
@@ -435,16 +483,16 @@ This project is far larger than one context window. Your biggest risks are forge
 
 | Topic | Decision |
 |---|---|
-| Working name | APK Forge AI (display name configurable in one place) |
+| Working name | CatDot Studio (display name configurable in one place) |
 | Target OS | Windows 10 (1809+) and 11, x64; WebView2 runtime required (installer bootstraps it); macOS/Linux deferred but keep code portable (no needless Windows-only APIs outside `platform/` module) |
 | Architecture | Local-first; no backend, no accounts, no cloud DB |
-| App data | `%APPDATA%/ApkForgeAI` (settings, DB, tool cache, keystores); projects default `Documents/ApkForge Projects` (user-changeable) |
+| App data | `%APPDATA%/CatDotStudio` (settings, DB, tool cache, keystores); projects default `Documents/CatDot Projects` (user-changeable) |
 | Telemetry | Off; opt-in later only, never APK content |
 | Default mode | From onboarding choice; Beginner → Guided |
 | Default AI access | Local provider → L3; online provider → L1 until user raises it |
 | Java | Detect JDK 17+; if missing, offer consented download of a pinned Temurin JRE into the tool cache (do not require user to edit PATH/JAVA_HOME) |
 | Updates | Manual check + opt-in auto-check; toolchain and app versioned separately |
-| App license | Proprietary/unspecified until the owner decides; keep third-party notices complete regardless |
+| App license | Apache-2.0 (already in repo); maintain NOTICE + THIRD_PARTY_LICENSES |
 
 ---
 
@@ -501,7 +549,7 @@ From first launch to a successfully modded, signed APK installed on a device/emu
 - Structured logs with levels and rotation; `tracing` spans per job/task id; log viewer in-app.
 
 ## U4. Data safety & portability
-- Project export/import (`.apkforge` bundle with hashes); automatic project backup before risky operations; "Restore to original" button (re-create workspace from `original/`).
+- Project export/import (`.catdot` bundle with hashes); automatic project backup before risky operations; "Restore to original" button (re-create workspace from `original/`).
 - Disk usage view and safe cleanup (never delete originals/outputs without explicit confirmation).
 
 ---
@@ -524,7 +572,210 @@ From first launch to a successfully modded, signed APK installed on a device/emu
 7. Every "?" and error links to an existing help article; i18n has no missing keys; keyboard-only walkthrough passes; axe checks pass on key screens.
 8. `docs/FEATURE_STATUS.md` truthfully lists every feature as real / disabled-planned / unverified-env, and nothing in the UI claims more.
 9. Licenses, SBOM, and release docs complete; uninstall leaves user projects intact.
+10. (Phase 8) The Part Z website exists in its own folder, serves real downloads with checksums, a real changelog, and passes Part Z9.
 
 Proceed. When in doubt: be honest, be minimal, be verifiable.
 
-Begin now with Part N (then Part P handoff files).
+---
+
+# PART X — VS CODE–STYLE IDE SHELL (supersedes Part H4 layout; all anti-demo rules still apply)
+
+The product must feel like a purpose-built desktop IDE (VS Code / JetBrains interaction discipline), **not** a web dashboard in a window. Original design only: do not copy Microsoft/JetBrains logos, trademarks, proprietary code, or branded assets, and never claim the product is VS Code. Monaco is an embedded editor component. Product name, logo, and colors are configurable in one place for rebranding.
+
+## X1. Regions (each region must be backed by real behavior or shown disabled-planned with phase badge)
+
+**Activity bar** (compact vertical icons; each opens a real panel): Explorer · APK Analysis · Search · AI Agent · Change History (patch/checkpoint timeline — *not* required to be Git) · Build & Test · Device Explorer · Tools/Toolchain · Settings. Guided Mode is a first-class entry (top of the bar) for beginners.
+
+**Explorer sidebar** (virtualized tree, keyboard navigable, context menus, filter, refresh): workspace projects · **Original APK (protected, read-only badge)** · decoded manifest/resources · assets · smali/DEX output · decompiled Java/Kotlin (labelled "approximate") · native libraries (metadata only) · patches · build outputs · logs · checkpoints. The protected original can never be opened for editing through normal editor flow.
+
+**Main editor area**: real tabs (modified dot, unsaved-change warnings, save/revert), split editors, find/replace, navigation history, Monaco diff editor for patches, search results linked to file+line, syntax modes (Java, Kotlin, Smali, XML, JSON, YAML, properties, shell/log), read-only handling for binary/unsupported formats, image preview with replace flow (shows expected type/dimensions, before/after), structured **Manifest view** (components, permissions, intent filters, with plain-language tooltips) alongside raw XML. Decompiled content always carries an "approximate, not original source" banner.
+
+**Right AI panel**: new task, chat history, streaming, plan, tool timeline with per-step status, approval requests, patch-review shortcuts, stop/retry/continue, copy/export, provider/model selector, current access level and mode.
+
+**Bottom panel tabs**: Problems · Terminal · Output · Build · Agent Logs · Diagnostics · Device Logs · Tests. Every tab shows **real** backend output only (event-streamed, virtualized), with filter, clear, copy, export, auto-scroll toggle, timestamps, error highlighting, and click-to-open file locations. "Terminal" is a backend-managed process viewer; an advanced user command runner (if built) is a separate, permission-gated feature and is **never** exposed to the agent (Part E3).
+
+**Status bar**: active project · current file/encoding/line ending · toolchain readiness · AI provider/model + access level · running job · build statuses (the five honest statuses) · device status · problem counts · current mode. A green state appears only after the real operation succeeded.
+
+**Command palette (Ctrl+Shift+P) & menus (File, Edit, View, Project, APK, Agent, Build, Device, Help)**: commands are **registered from the feature registry**, so a command exists only if its feature exists; unavailable commands appear disabled with the reason ("Needs apktool — Fix in Toolchain"). Required commands when their features exist: Open APK/Project, Create Project, Inspect APK, Find in Files, Open Manifest, Decode Resources, Decompile Code, Start AI Task, Review Changes, Build/Sign/Verify APK, Connect Device, Run Diagnostics, Open Settings/Logs, Create/Restore Checkpoint, Run Recipe, Restore to Original. Shortcuts remappable; avoid conflicts with Windows/text-entry behavior.
+
+**Layout engineering**: resizable/dockable panels with minimum widths, persisted layout/theme/tabs/recent projects, HiDPI + Windows scaling, focus management, virtualization everywhere lists/logs/sources can be large, polished first-load/empty/error states. Dark default, light supported, restrained palette, dense-but-readable, no decorative animation.
+
+## X2. Agent modes (map onto Part G access levels; modes can never bypass policy)
+| Mode | Behavior | Access level |
+|---|---|---|
+| **Ask** | explains APK/workspace, suggests changes, edits nothing | L1–L2 |
+| **Plan** | produces a validated step plan, executes nothing that mutates | L2 |
+| **Assisted** | proposes patches; every mutation needs approval | L3 |
+| **Agent** | executes permitted actions, validates, repairs (bounded); device/destructive still confirm | L4–L5 |
+Mode + level always visible in the AI panel and status bar.
+
+## X3. Event protocol (typed, task-ID-correlated; UI subscribes, never polls for logs)
+`job.created · job.started · job.progress · job.waiting_for_approval · tool.started · tool.output · tool.completed · patch.proposed · patch.applied · validation.completed · build.completed · job.failed · job.cancelled`. Terminal outcomes and recovery data are persisted so the UI can rebuild state after restart. Patches carry: task id, target file, intent, before/after structured diff, validation status, approval requirement, reversibility/limits; stale-base conflict detection before apply.
+
+## X4. `apk-reverse` integration discipline
+Classify every workflow from the reference repo in `docs/REFERENCE_ANALYSIS.md` as: (1) reuse as validated external script (license permitting), (2) wrap behind a typed native tool adapter, (3) reimplement cleanly, (4) expose as advanced optional operation, (5) unsupported (with reason). Verify on Windows before relying on any script. Translate its **decision gates** into visible pre-checks: environment check + target classification (packed? split? obfuscated? signature-checking?) **before** any patch/build step, shown to the user in plain language. Feature support statuses use the registry vocabulary: `real`, `experimental`, `requires-optional-dependency`, `unsupported`, `failed-validation`, `disabled-planned`, `unverified-env` — each with evidence references.
+
+## X5. Samples
+No generated fake projects. The only sample is the authored test fixture (Part J1), labelled **"Sample"** everywhere it appears, and used for the tour and tests.
+
+## X6. When to build the IDE shell (reconciles with Part K)
+- **Phase 0**: shell layout, activity bar, panels, status bar, command-palette infrastructure, layout persistence — with every not-yet-real panel/command disabled-planned.
+- **Phase 1**: onboarding, dashboard, Original/Outputs cards, Project Map, Help Center, Guided Mode shell.
+- **Phase 2**: Explorer tree, editor tabs, search, manifest view become real. **Phase 3**: diff editor, patch/Change History, resource/image editors. **Phase 4**: Build panel, Device Explorer, Device Logs, Problems. **Phase 5**: AI panel fully live, Agent Logs, modes. **Phase 6+**: advanced panels (xrefs/call graph, split APK, runtime analysis).
+
+## X7. If a session ends before a phase is done
+Leave the repo buildable on the main branch, update `docs/STATE.md` with exact progress and the next independently actionable work unit, and never claim completeness. Avoid destructive Git operations; never push or overwrite without authorization.
+
+---
+
+# PART Y — CATDOT LEARN HUB: TUTORIALS, FEATURES & GUIDANCE (the "anyone can mod an APK" system)
+
+**Goal:** a person who has never heard of smali can open CatDot Studio, follow the Learn Hub, and produce a working modified APK (own/authorized app) without Googling anything. Learning is built **into the IDE**, works **offline**, runs on the **real app** (not slideshows), and is **verified by real checks**. This part expands and supersedes Part H7. The Anti-Demo Contract applies fully: no fake lessons, no screenshots of UI that doesn't exist, no tutorial steps that can't be completed.
+
+## Y1. Principles
+1. **Do, don't just read.** Every lesson has actions the learner performs in the actual UI; the app detects completion from real backend events/state, not from a "Next" click.
+2. **Safe by default.** Tutorials run on a *sandbox copy* of the bundled sample fixture (or a user-chosen project copy). Never touch the user's real project unless they explicitly pick it; an automatic checkpoint is made first, with an "Undo this lesson" button.
+3. **Honest.** Lessons state what can and cannot be done; anything not implemented is shown as "Planned" and excluded from paths.
+4. **Plain language first**, technical term second (hover shows the term + glossary link). Target reading level ≈ grade 8; short sentences; one idea per step.
+5. **Offline & private.** No remote images/videos/fonts/analytics. All content ships in the app.
+6. **Always accurate.** Content is generated from or validated against the feature registry, command registry, shortcut registry, and error map, so docs cannot silently drift from the app (Y8).
+
+## Y2. Where it lives (VS Code–style integration)
+- Activity bar: a top-level **Learn** entry (graduation-cap/lightbulb icon) opening the Learn Hub as an **editor tab** (React page, not a web embed); shortcut `Ctrl+Shift+L`; also **Help menu → Learn Hub**, command palette `Learn: …`, and a **"?" Guide Me** button in the title bar.
+- Layout of the Learn Hub tab: left **table of contents tree** (Paths · Features · Concepts · Cookbook · Troubleshooting · Shortcuts · Safety), center content, right "On this page" + related items + "Open in app" actions. Search box on top (full-text across all Learn content; results grouped by type).
+- First-run: after setup (Part H1) offer **"Start: Your first mod in 10 minutes"**; Welcome/Dashboard shows a **Continue learning** card and a progress ring.
+- A compact **Learn drawer** (right side) shows the relevant mission/article for whatever screen the user is on, so guidance sits beside the tool instead of replacing it.
+
+## Y3. Learn Hub home — "What do you want to do?"
+A goal picker with large cards (each launches a real mission/path or the Capability Advisor):
+Change app name · Change app icon · Change colors/theme · Translate / add a language · Remove a permission · Make a debug build · Understand what's inside an APK · Fix a build/install error · Use the AI assistant · Build, sign & install · Restore / undo changes · "I'm stuck" (symptom wizard).
+Also: **Recommended next step** (derived from real project state via the Project Map: e.g., "You imported an APK → inspect its manifest") and **Continue where you left off**.
+
+## Y4. Learning Paths & Missions
+**Mission** = one focused task, 3–12 minutes. Each has: goal (one sentence), time estimate, difficulty (Beginner / Intermediate / Advanced), prerequisites (auto-checked: toolchain ready? AI connected? project open?), numbered steps, **verification checks**, "what you learned", "what could go wrong" and "undo this mission".
+
+Required paths (only include missions whose features are `real`; others appear greyed as "Coming in Phase N"):
+1. **First mod in 10 minutes** (beginner, ties to Guided Mode): open sample APK → see what's inside → change app name → change icon → build → sign → install on emulator/device → verify.
+2. **Understand your APK**: APK anatomy, manifest, permissions, resources, DEX/smali vs decompiled Java, signing, ABIs.
+3. **Make it yours** (branding & language): colors/themes, icons (adaptive + legacy), strings, add a language (incl. Bangla example), plurals/placeholders pitfalls.
+4. **Build, sign & install like a pro**: debug vs release keystore, zipalign→sign order, install errors, keystore backup, split APKs.
+5. **Work with AI**: connect online AI, connect local AI, access levels & privacy, writing good prompts, reviewing AI patches, undoing AI changes, when AI can't help.
+6. **Power tools**: search & xrefs, smali basics (read-only first), manifest components, package rename (risks), patches & checkpoints.
+7. **Troubleshooting & recovery**: reading the Problems/Build panels, the 30 common errors, restoring to original, diagnostic bundle.
+Each path shows a progress bar and a completion summary of verified skills.
+
+## Y5. Interactive tutorial engine (real, not slides)
+Implement a typed engine (`learn/engine`) with step types:
+- `read` (rich text + callouts: Tip / Warning / Risk / Undoable),
+- `spotlight` (coach mark highlighting a real UI element via a **UI anchor registry**: stable ids like `explorer.tree`, `build.run`, `ai.input`; if an anchor is missing the step is flagged in CI),
+- `do` (user performs an action; completion detected from real typed events, e.g. `project.imported`, `patch.applied`, `build.completed{signed:true}`),
+- `verify` (automatic assertion against real state/tools: e.g., decoded `strings.xml` label equals the value entered; `aapt2 dump badging` of the built APK shows the new label; signature verified),
+- `choice` / `quiz` (optional, short, explanatory feedback, never gating beginners),
+- `branch` (if a prerequisite fails → inline fix: "apktool missing → Fix in Toolchain" then resume),
+- `autoact` ("Do this step for me" runs the *same real tool* with preview/approval — still honest and undoable),
+- `checkpoint` (auto-create + "Undo mission").
+Engine rules: resumable after restart; never blocks the IDE (non-modal, movable, dismissible); keyboard accessible; respects reduced motion; can be paused, restarted, or skipped; progress stored locally.
+
+## Y6. Feature Directory (every feature documented in-app)
+A searchable, filterable catalogue generated from `feature-registry.json` + article metadata. Each **feature card**: name, plain-language purpose, when to use it, when *not* to, difficulty, prerequisites, honest status badge (Real / Experimental / Needs optional tool / Planned), keyboard shortcut(s), risks & undo behavior, related missions/articles, **"Open it"** (jumps to the feature) and **"Show me"** (starts its mini-tour). CI fails if a `real` feature lacks a card or a card references a non-existent feature.
+
+## Y7. More Learn Hub components
+- **Capability Advisor ("Can I do this?")**: user picks or types a desired change; the app classifies feasibility with plain explanation — *Resource-only (easy)* · *Manifest edit* · *Needs smali/code change (advanced)* · *Native/packed/protected (limited)* · *Not possible here* · *Not allowed (policy; offers legitimate alternatives)*. When a project is open it inspects the real APK (e.g., "your app label is `@string/app_name`, found in 6 locales") to give project-specific guidance. Never over-promises.
+- **Interactive APK Anatomy**: a diagram built from the **actually opened APK** (manifest, `classes*.dex`, `resources.arsc`, `res/`, `assets/`, `lib/`, `META-INF`/signature) with plain explanations, sizes, and "open in explorer" actions.
+- **Cookbook**: step-by-step recipes (what, why, how, verify, undo) with before/after visuals **generated by real app runs** (`scripts/gen-learn-assets` drives the real UI via Playwright/WebDriver against the fixture; no hand-drawn fake screenshots; if an asset is missing, show text-only).
+- **Concepts library & Glossary**: Android 101, APK vs AAB vs split APKs, smali, DEX, manifest, resources, signing, zipalign, debuggable, ABI, keystore, why decompiled ≠ source; hover cards available app-wide.
+- **Troubleshooting Center**: (a) error-code lookup backed by the F6 error map, (b) **symptom wizard** ("App won't install" → decision tree → exact code → fix), (c) "Fix this error" deep links from the Problems/Build panels, (d) "Ask AI to fix" when AI is connected.
+- **Shortcuts & Command reference**: auto-generated from the live shortcut/command registries (always accurate), searchable, printable.
+- **Safety & Responsible Use**: what CatDot will and won't do and why (Part L), data privacy (G3), originals are never modified.
+- **What's new**: release notes surfaced in-app; "new" badges on newly released features.
+- **Ask CatDot (grounded help)**: a Q&A box that answers **only** from Learn Hub content + feature registry (local retrieval), cites the source article, and says "I can't find that" instead of guessing. Works without AI via search; uses the configured AI provider (respecting access level/privacy) to phrase answers when available.
+
+## Y8. In-context guidance (beyond the Learn tab)
+- **Coach marks & hints**: first-time hints on key panels (rate-limited, dismissible, "don't show again", global off switch); never overlap critical controls.
+- **"Explain this"** on right-click/`F1` for any panel, setting, file type, manifest field, error, or toolbar item → popover with plain explanation + "Learn more" link.
+- **Empty states** that teach (purpose, one-sentence guidance, primary action, link to the relevant mission).
+- **Next-step coach** tied to the Project Map (Part H2) with the single most useful next action.
+- **Pre-action explanations** for risky steps (re-signing, package rename, uninstall, permission removal): what will happen, what might break, how to undo.
+- **Plain-language error cards** everywhere: What happened / Why / What to do / Learn more.
+- **Simple Mode toggle** (beginner): hides advanced panels (smali, xrefs, raw terminal), uses plain labels, linear workflow; **Pro Mode** shows everything. Switch anytime without losing state.
+
+## Y9. Content model, authoring & validation (so content stays correct)
+- Location: `apps/desktop/src/learn/content/<lang>/` as Markdown with typed frontmatter: `id, title, kind(path|mission|article|feature|concept|recipe|error), level, minutes, tags, prerequisites, featureIds, errorCodes, anchors, appVersionMin, lastVerified, language`. Step directives for missions (e.g., `:::step{type="do" expect="project.imported"}`), validated against a JSON Schema at build time.
+- **Build-time/CI validation**: schema validity; broken internal links; missing UI anchors; every `real` feature has a card; every error code in the F6 map has an article; every "Try it" action id exists in the command registry; i18n key coverage; `lastVerified` older than N releases = warning; max length per article (≤ 1,200 words except references); plain-language lint (long-sentence warning); no remote URLs for assets.
+- **Tutorials-as-tests (critical):** a headless **tutorial runner** executes each Beginner/Intermediate mission against the fixture with scripted user actions and asserts every `verify` step passes. A mission that cannot complete in CI is removed from the shipped paths until fixed. This guarantees the guidance matches the real product.
+- **Languages:** English complete first; Bangla (বাংলা) translation for Path 1, core UI, and error cards by Phase 7 with a bundled Bengali-capable font (e.g., Noto Sans Bengali) and tested text rendering; structure all content for additional languages.
+
+## Y10. Minimum shipped content inventory (write real, accurate content — no filler)
+**Missions (≈24):** import APK · read the APK summary · inspect manifest · rename app · replace launcher icon · change colors/theme · add a language/translate strings · remove a permission · enable debuggable build · bump version · build → align → sign → verify · install & launch on emulator · install on a real phone (developer options/USB debugging/wireless) · use search/xrefs · create/restore checkpoint · review & undo a patch · connect online AI · connect local AI (Ollama/LM Studio) · set access level & privacy · ask AI to rename app + icon (review its patch) · fix a build error with "Fix this error" · export/import a project · restore to original · generate a diagnostic bundle.
+**Concept articles (≈15):** What is an APK · AAB/split/XAPK · APK anatomy · manifest explained · resources explained · smali vs Java · decompiled ≠ source · signing & keystores · zipalign · debug vs release · ABIs · permissions & risks · why a re-signed app can't update the original · obfuscation & packed apps · what CatDot can/can't mod.
+**Reference:** shortcuts · commands · settings map · error codes (all F6 entries) · glossary (≥60 terms) · responsible-use & refusals · FAQ · release notes.
+
+## Y11. Delivery timeline (reconciles with Part K)
+- **Phase 1:** Learn Hub shell (tab, TOC, search), content schema + validator, anchor registry, glossary + "Explain this" infrastructure, Simple/Pro mode, onboarding hand-off, first articles (concepts + toolchain/AI setup).
+- **Phase 2–4:** missions become real as their features become real (import/inspect → edit → build/sign/install); tutorial engine + tutorial runner in CI from the first mission onward; Capability Advisor; Interactive APK Anatomy; Troubleshooting Center tied to the error map.
+- **Phase 5:** AI missions, Ask CatDot (grounded help), access-level/privacy lessons.
+- **Phase 6:** Power-tools path.
+- **Phase 7:** Bangla localization, usability testing (Y12), content freshness sweep, final accuracy audit.
+
+## Y12. Usability bar (measurable)
+Create `docs/USABILITY_TEST.md`: a script for ≥5 first-time users (no Android experience) attempting Path 1 **unaided**. Success = ≥ 4 of 5 produce a verified, signed, installed modified APK in ≤ 15 minutes; log every confusion point, fix the UI/copy, retest. Record honestly in `docs/EVIDENCE/`. Local-only metrics (no telemetry): mission completion, steps abandoned (stored on-device, viewable by the user, exportable). If you cannot run human tests, state it as `UNVERIFIED-ENV` and provide the script for the owner to run.
+
+---
+
+# PART Z — CATDOT STUDIO WEBSITE & DOWNLOAD HUB (FINAL PHASE — build only after the IDE is complete)
+
+## Z0. Timing gate (strict)
+This is **Phase 8** and starts **only after** Part W (Final Acceptance Checklist) items 1–9 are verifiably true and at least one real release candidate installer exists. Do **not** build, scaffold, or spend effort on the website earlier. Only two things are maintained from day one because the website will consume them: `CHANGELOG.md` (Keep-a-Changelog style, generated/curated from conventional commits at every release) and the release workflow metadata (versions, checksums). The Depth Mandate (A3.9) and Anti-Demo Contract (A3) apply fully: no placeholder pages, no lorem ipsum, no fake numbers.
+
+## Z1. Purpose
+A professional, fast, accessible public website — in its **own self-contained folder** (`apps/website/`, a static site; ADR for framework choice, e.g. Astro or Next.js static export, preferring zero-JS-by-default static output) — where people can **download CatDot Studio**, read what it is and how to use it, see the **changelog**, and verify what they downloaded. The IDE and the site share one source of truth for features, docs, and versions.
+
+## Z2. Download Hub (the core feature)
+- **Real downloads only.** Binaries are **never committed to git**. Installers/archives are published as **GitHub Release assets** by the CI release workflow (`.github/workflows/release.yml`: build → test → bundle → compute `SHA256SUMS` → (sign if a certificate exists) → create release → upload). The website reads release metadata from the GitHub Releases API **at build time** to generate `releases.json` (version, date, assets, sizes, checksums, notes); a committed manifest fallback exists so the site still builds offline. If no release exists, show an honest "First release coming — follow the repo" state; never fake a version, size, date, or count.
+- **Download page** shows: latest stable version prominently (Windows x64 installer; portable ZIP if produced), file size, release date, **SHA-256** with a copy button, **system requirements** (Windows 10 1809+/11 x64, WebView2, disk space, RAM guidance incl. local-AI note), **install steps**, **how to verify the download** (`certutil -hashfile <file> SHA256` / PowerShell `Get-FileHash` and compare), SmartScreen/antivirus note (honest: state whether the installer is code-signed; reverse-engineering tools can trigger false positives; allow-list guidance), what's installed/where data lives, **uninstall** instructions (user projects preserved), and links to source code, license (Apache-2.0), SBOM, and third-party notices. Older versions listed with the same metadata; pre-releases clearly labelled.
+- **Toolchain honesty:** explain that Android SDK tools are downloaded on the user's machine after accepting Google's license (Part R), and which tools the app can install for them.
+- Download buttons must resolve to real asset URLs (CI link check). No tracking pixels or third-party download redirectors; direct HTTPS links to the release asset.
+- Optional later: update feed JSON consumed by the in-app updater (same signed manifest), documented in `docs/RELEASE.md`.
+
+## Z3. Pages (all content real, accurate, and generated/validated from repo sources where possible)
+1. **Home**: what CatDot Studio is (tagline "AI-Powered Android Engineering IDE"), who it's for, the three modes (Guided / Manual / AI), real screenshots (see Z5), honest feature highlights, download CTA, responsible-use statement.
+2. **Download** (Z2).
+3. **Features**: generated from `feature-registry.json`; each feature with honest status (Real / Experimental / Needs optional tool / Planned), grouped by area; no claim beyond the registry.
+4. **Learn / Docs**: public rendering of the **same Markdown content as the in-app Learn Hub** (single source, no copy-paste drift): getting started, first mod in 10 minutes, concepts, troubleshooting, shortcuts, glossary, error-code reference. Search (client-side, offline index).
+5. **Changelog**: rendered from `CHANGELOG.md` per version with date, categories (Added/Changed/Fixed/Security/Removed), filter by type, anchors/permalinks per version, link to the release and diff, **RSS/Atom feed**. Latest version highlighted; "Unreleased" section only when meaningful.
+6. **Roadmap**: from `docs/ROADMAP.md`/registry, honest (shipped / in progress / planned).
+7. **Security & Responsible Use**: Part L policy in plain language, what the app refuses, data privacy model (local-first; AI requests only with consent), vulnerability reporting (`SECURITY.md` link), supply-chain facts (checksums, SBOM).
+8. **Privacy** (no-account, no-telemetry-by-default statement matching app behavior), **License & Notices** (Apache-2.0, third-party licenses list generated from `THIRD_PARTY_LICENSES`), **FAQ**, **About** (author/project, links to GitHub repo, issues, discussions), **Contact/Support** (GitHub Issues links; no fake emails), custom **404**.
+9. **Not allowed:** fake testimonials, fake "trusted by", invented download counts/stars/metrics, stock "AI" hype, unverifiable claims, copying VS Code/JetBrains branding.
+
+## Z4. Design & UX
+Visual identity consistent with the IDE (CatDot brand config, dark-first with light option, same tokens where possible), clean developer-tool aesthetic, strong typography, generous but purposeful spacing, clear primary CTA ("Download for Windows"), sticky simple nav (Features · Learn · Download · Changelog · GitHub), footer with legal links. Responsive (mobile → ultrawide), keyboard accessible, WCAG 2.2 AA contrast, reduced-motion respected, no layout shift, no heavy animation. Works with **JavaScript disabled** for all core content including downloads and changelog. Bangla page for Home/Download/Getting-started when the Bangla localization exists (Part Y9), with correct font rendering.
+
+## Z5. Assets
+Screenshots and demo visuals are **generated from the real application** by `scripts/gen-site-assets` (drives the real UI against the fixture via Playwright/WebDriver), dimensioned and optimized (AVIF/WebP + fallback, `srcset`, alt text). If an asset can't be generated, omit it — never mock the UI in Figma-style fakes. Logo/favicons/OG images generated from the branding config. Self-host fonts (subset, `font-display: swap`); no third-party CDNs at runtime.
+
+## Z6. Technical requirements
+- Static output; deployable to any static host. Provide `vercel.json` (clean URLs, security headers, cache rules) **and** generic instructions; **do not deploy or change DNS without explicit owner authorization.**
+- Security headers/CSP (no inline scripts unless hashed), `rel=noopener`, no mixed content, HTTPS-only links, subresource integrity for any external script (prefer none).
+- SEO: titles/descriptions per page, canonical URLs, Open Graph/Twitter cards, `sitemap.xml`, `robots.txt`, JSON-LD `SoftwareApplication` (accurate version/OS/downloadUrl from `releases.json`).
+- Analytics: **none by default**; if the owner later wants any, privacy-respecting, cookie-less, documented, opt-in. No cookie banner needed when no cookies are used.
+- Performance budgets: Lighthouse ≥ 95 (Performance/Accessibility/Best Practices/SEO) on key pages when measurable; total JS minimal; images optimized. Record real measurements in evidence.
+- Build is reproducible: `pnpm --filter website build` works offline using committed fallback data; documented in `apps/website/README.md`.
+
+## Z7. Automation & single sources of truth
+- `scripts/sync-site-data` generates `releases.json`, `features.json`, changelog data, license list, and shortcut/command references from repo sources; CI fails if the site is out of sync with them.
+- Release workflow ends by opening a PR (or committing under authorization) that refreshes site data for the new version; never auto-publish without owner approval.
+- `docs/RELEASE.md` includes the release → site update checklist.
+
+## Z8. Website tests & gates
+Link checker (internal + external, external tolerant/offline-safe) · HEAD-check that every download URL resolves to a real asset (skipped, and reported as skipped, when offline) · checksum on page equals `SHA256SUMS` · changelog parser unit tests (malformed entries, unreleased, ordering) · features page equals registry (no extra, no missing) · accessibility (axe) on all templates · Lighthouse run · no-JS render test · HTML validity · sitemap correctness · image alt-text lint · dead-asset lint · `audit:reality` (no lorem/fake/mock in site content).
+
+## Z9. Website acceptance checklist
+1. A visitor can find, download, verify (checksum), and install the latest real release without leaving the site's instructions.
+2. Every number, version, date, size, and checksum on the site comes from real release data.
+3. Changelog shows every released version accurately with permalinks and a working feed.
+4. Features/Roadmap/Docs pages match the app's registry and Learn Hub content (single source).
+5. All gates in Z8 pass; skipped checks are listed with reasons.
+6. Nothing on the site claims more than the product actually does.
+
+Begin now: Part 0 resume protocol → Part N → Part P handoff files → continue Part K from the first phase whose exit test is not verifiably met (include the Part X shell and Part Y Learn Hub foundation). Apply the Depth Mandate (A3.9) to every task. Build the Part Z website only in Phase 8, after the IDE is complete.
