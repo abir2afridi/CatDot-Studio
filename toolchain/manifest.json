@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "note": "Pinned toolchain versions + SHA-256 (Part C + R). Phase 0: detected local versions; pinned downloads land in Phase 4 with checksums and license texts.",
+  "pins": [
+    {
+      "id": "temurin-jre-17",
+      "version": "17.0.11+9",
+      "sha256": "TBD-PHASE4",
+      "url": "TBD-PHASE4",
+      "license": "GPLv2 with Classpath Exception (to be confirmed from pinned build)"
+    },
+    {
+      "id": "apktool",
+      "version": "TBD-PHASE4",
+      "sha256": "TBD-PHASE4",
+      "url": "TBD-PHASE4",
+      "license": "Apache-2.0 (to be confirmed from pinned release)"
+    },
+    {
+      "id": "jadx",
+      "version": "TBD-PHASE4",
+      "sha256": "TBD-PHASE4",
+      "url": "TBD-PHASE4",
+      "license": "Apache-2.0 (to be confirmed from pinned release)"
+    }
+  ],
+  "compatibility": [
+    {
+      "apktool": "TBD",
+      "aapt2": "34.0.0+",
+      "jdk": "17+",
+      "targetSdk": "34",
+      "note": "Matrix filled from real runs in Phase 2/4"
+    }
+  ],
+  "distributionRules": "Android SDK components (aapt2/zipalign/apksigner/adb/emulator) are NEVER bundled; downloaded on-device from dl.google.com after license acceptance (Part R)."
+}

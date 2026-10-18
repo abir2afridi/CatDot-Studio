@@ -1,0 +1,36 @@
+/* Design tokens — kept OUT of the Tailwind-processed file so the light-theme
+   [data-theme] override is never stripped (Tailwind v4 drops conditional
+   custom-property blocks it can't statically resolve). Plain CSS passes
+   through the bundler verbatim. */
+
+/* Dark theme (default). */
+:root {
+  --bg: #0b0e14;
+  --surface: #11151f;
+  --surface-2: #171c29;
+  --border: #232a3b;
+  --text: #e6e9f0;
+  --text-dim: #9aa4bd;
+  --accent: #4f8cff;
+  --success: #3fb950;
+  --warning: #d29922;
+  --danger: #f85149;
+  --radius: 8px;
+  --mono: ui-monospace, "SFMono-Regular", "Cascadia Code", Menlo, monospace;
+}
+
+/* Light theme — complete token swap (C8). Tailwind utilities read these vars
+   via @theme inline, so every background, text and border utility follows
+   automatically. */
+[data-theme="light"] {
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --surface-2: #eceff6;
+  --border: #d4d9e6;
+  --text: #171c28;
+  --text-dim: #59627a;
+  --accent: #2f6fed;
+  --success: #17803d;
+  --warning: #9a6700;
+  --danger: #c62828;
+}

@@ -1,0 +1,34 @@
+[package]
+name = "apk-forge-core"
+version = "0.1.0"
+edition = "2021"
+license = "UNLICENSED"
+description = "APK Forge AI core: security, storage, jobs, tools, ai (Phase 0 guardrails-first)"
+
+[lib]
+name = "apk_forge_core"
+path = "src/lib.rs"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+rusqlite = { workspace = true }
+sha2 = { workspace = true }
+regex = { workspace = true }
+ts-rs = { workspace = true }
+keyring = { workspace = true }
+reqwest = { workspace = true }
+futures-util = { workspace = true }
+zip = { version = "2.2", default-features = false, features = ["deflate"] }
+
+[dev-dependencies]
+tokio = { workspace = true }
+tempfile = "3.14"
+
+[[example]]
+name = "detect_toolchain"
+path = "examples/detect_toolchain.rs"

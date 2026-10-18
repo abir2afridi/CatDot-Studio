@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "features": [
+    {
+      "id": "security-paths",
+      "title": "Path sandbox (resolve_in_project)",
+      "phase": 0,
+      "status": "real",
+      "evidence": ["cargo test -p apk-forge-core security::paths"]
+    },
+    {
+      "id": "security-policy",
+      "title": "Policy engine (access levels × risk tiers)",
+      "phase": 0,
+      "status": "real",
+      "evidence": ["cargo test -p apk-forge-core security::policy"]
+    },
+    {
+      "id": "security-redaction",
+      "title": "Secret redaction filter",
+      "phase": 0,
+      "status": "real",
+      "evidence": ["cargo test -p apk-forge-core security::redaction"]
+    },
+    {
+      "id": "storage-sqlite",
+      "title": "SQLite + numbered migrations",
+      "phase": 0,
+      "status": "real",
+      "evidence": ["cargo test -p apk-forge-core storage"]
+    },
+    {
+      "id": "jobs-engine",
+      "title": "Job engine (progress, cancel, kill-tree, recovery)",
+      "phase": 0,
+      "status": "real",
+      "evidence": ["cargo test -p apk-forge-core jobs"]
+    },
+    {
+      "id": "toolchain-detect",
+      "title": "Toolchain detection (read-only)",
+      "phase": 0,
+      "status": "real",
+      "evidence": ["cargo run -p apk-forge-core --example detect_toolchain"]
+    },
+    {
+      "id": "ai-provider-trait",
+      "title": "AI provider trait + mock + connection taxonomy",
+      "phase": 0,
+      "status": "real",
+      "evidence": ["cargo test -p apk-forge-core ai"]
+    },
+    {
+      "id": "ai-openai-compat",
+      "title": "OpenAI-compatible SSE streaming adapter (real)",
+      "phase": 0,
+      "status": "real",
+      "evidence": ["cargo test -p apk-forge-core ai::openai_compat"]
+    },
+    {
+      "id": "secrets-credential-manager",
+      "title": "Secret store (Windows Credential Manager, keyring v1)",
+      "phase": 0,
+      "status": "real",
+      "evidence": ["cargo test -p apk-forge-core security::secrets"]
+    },
+    {
+      "id": "ts-rs-type-gen",
+      "title": "IPC type generation (ts-rs → shared-types)",
+      "phase": 0,
+      "status": "real",
+      "evidence": ["cargo test -p apk-forge-core export_bindings", "pnpm typecheck"]
+    },
+    {
+      "id": "app-shell",
+      "title": "App shell (nav, disabled-planned badges, status bar)",
+      "phase": 0,
+      "status": "real",
+      "evidence": ["pnpm --filter desktop build", "pnpm --filter desktop typecheck"]
+    },
+    {
+      "id": "settings-persistence",
+      "title": "Settings persistence (SQLite, real IPC)",
+      "phase": 0,
+      "status": "real",
+      "evidence": ["cargo test -p apk-forge-core storage::settings", "apps/desktop Settings page"]
+    },
+    {
+      "id": "system-check-ui",
+      "title": "System check UI (real toolchain detect)",
+      "phase": 0,
+      "status": "real",
+      "evidence": ["apps/desktop SystemCheck page → toolchain_detect IPC"]
+    },
+    {
+      "id": "system-logs",
+      "title": "System Logs panel (real error capture + copy)",
+      "phase": 0,
+      "status": "real",
+      "evidence": ["cargo test -p apk-forge-core logs", "apps/desktop Dashboard → logs_recent / log://entry"]
+    },
+    {
+      "id": "ai-streaming-ui",
+      "title": "AI connect + streaming chat UI (real)",
+      "phase": 0,
+      "status": "real",
+      "evidence": ["cargo test -p apk-forge-core ai::openai_compat", "apps/desktop AiChat page → ai://chat events"]
+    },
+    {
+      "id": "i18n-skeleton",
+      "title": "i18n skeleton (EN + BN scaffold, equal key sets)",
+      "phase": 0,
+      "status": "real",
+      "evidence": ["pnpm test (i18n key-set test)"]
+    },
+    {
+      "id": "eslint-ci",
+      "title": "ESLint gate + GitHub Actions CI (windows-latest)",
+      "phase": 0,
+      "status": "real",
+      "evidence": ["pnpm lint", ".github/workflows/ci.yml"]
+    },
+    {
+      "id": "audit-reality",
+      "title": "audit:reality gate + FEATURE_STATUS generation",
+      "phase": 0,
+      "status": "real",
+      "evidence": ["pnpm audit:reality"]
+    },
+    {
+      "id": "reference-analysis",
+      "title": "apk-reverse reference analysis",
+      "phase": 0,
+      "status": "unverified-env",
+      "evidence": ["docs/REFERENCE_ANALYSIS.md: upstream repo not found (404)"],
+      "reason": "https://github.com/newliver666/apk-reverse returns 'Repository not found'; user has 0 public repos"
+    },
+    {
+      "id": "import-inspect",
+      "title": "Import & inspect (F1–F3): drag-drop import, ZIP entry tree, SHA-256, entry preview",
+      "phase": 2,
+      "status": "real",
+      "evidence": ["cargo test -p apk-forge-core workspace", "apps/desktop Explorer → apk_import/apk_report IPC"]
+    },
+    {
+      "id": "manual-edits",
+      "title": "Manual text-entry edits with persisted patch file (F4, text entries)",
+      "phase": 2,
+      "status": "real",
+      "evidence": ["cargo test -p apk-forge-core workspace::read_entry", "apps/desktop EditorArea → apk_save_entry/apk_revert_entry + patches.json"]
+    },
+    {
+      "id": "build-sign-verify",
+      "title": "Build → align → sign → verify (F5) via zipalign/apksigner/keytool",
+      "phase": 2,
+      "status": "real",
+      "evidence": ["cargo test -p apk-forge-core tools::build_tools", "apps/desktop Explorer → apk_build_sign IPC"]
+    },
+    {
+      "id": "decode-apk-tools",
+      "title": "apktool/JADX decompile → smali/AXML editing (requires tools installed)",
+      "phase": 3,
+      "status": "disabled-planned",
+      "evidence": [],
+      "reason": "apktool and jadx are not installed on this machine; text editing covers XML/assets/smali only when provided by the user"
+    },
+    {
+      "id": "guided-edit-flow",
+      "title": "Guided multi-step edit flow with checkpoints",
+      "phase": 3,
+      "status": "disabled-planned",
+      "evidence": []
+    },
+    {
+      "id": "ai-agent",
+      "title": "AI agent loop (G5)",
+      "phase": 5,
+      "status": "disabled-planned",
+      "evidence": []
+    }
+  ]
+}

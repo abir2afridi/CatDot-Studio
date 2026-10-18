@@ -1,0 +1,36 @@
+# APK Forge AI — git ignores (generated Phase 0)
+.reference/
+target/
+node_modules/
+dist/
+build/
+*.log
+.DS_Store
+Thumbs.db
+# Tauri / Vite
+apps/desktop/dist/
+apps/desktop/src-tauri/target/
+# App data (never commit user data)
+*.apk
+*.apks
+*.xapk
+*.aab
+!tests/fixtures/*.apk
+# Secrets / keystores
+*.jks
+*.keystore
+*.p12
+.env
+.env.*
+# SQLite DBs created by dev runs
+*.db
+*.db-wal
+*.db-shm
+# Diagnostic bundles
+*.apkforge-diag.zip
+# OS
+Desktop.ini
+# Stray ts-rs default export dirs (the real bindings live in
+# packages/shared-types/src/generated and ARE committed)
+crates/*/bindings/
+crates/packages/
