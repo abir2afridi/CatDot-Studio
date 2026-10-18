@@ -22,12 +22,16 @@
     identifiers rebranded without local-data migration (ADR-0011). Layout kept
     as-is (ADR-0010). Lockfiles regenerated.
 - Next 3 steps:
-  1. `pnpm tauri build` → new NSIS/MSI installers under the new brand, then
-     manual smoke of installer + UI (currently `UNVERIFIED-ENV` this session).
-  2. Guided-edit flow (Phase 3): pending-checkpoint list, before/after diff,
+  1. Guided-edit flow (Phase 3): pending-checkpoint list, before/after diff,
      restore point per export.
-  3. adb install flow (device/emulator permitting) + branding config module
+  2. adb install flow (device/emulator permitting) + branding config module
      (`branding.ts` + Rust const) so name/logo/colors live in one place.
+  3. Full manual UI drive (`tauri dev`) of the improved Explorer (revert-all,
+     badges) — currently compile/typecheck-verified only.
 - Open risks: apk-reverse 404 still unresolved (REFERENCE_ANALYSIS.md), Java 25
-  vs JDK 17 pin (works today), i18next peer-dep warning, no UI runtime drive
-  yet this session.
+  vs JDK 17 pin (works today), i18next peer-dep warning.
+- Build state: **installers built 2026-10-18** (post-improvement-pass):
+  `apps/desktop/src-tauri/target/release/bundle/msi/CatDot
+  Studio_0.1.0_x64_en-US.msi` (4.0 MiB, sha256 81a8…3c5b9) and
+  `…/nsis/CatDot Studio_0.1.0_x64-setup.exe` (2.9 MiB, sha256 38c8…6157).
+  Release exe smoke-tested (launch 5 s alive 31.5 MB, then force-killed).
