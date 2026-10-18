@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "react-i18next";
 import { apkExport, apkBuildSign, apkImport, apkReport, apkRevertAll, apkPatchSummary } from "../lib/apk";
 import { IpcError } from "../lib/ipc";
@@ -59,6 +60,27 @@ export function Explorer() {
     },
     onError: (e) => setMessage({ text: describe(e), ok: false }),
   });
+  importMutRef.current = importMut;
+
+  // Native "Open file" dialog (Part E4: dialog plugin for file pick only).
+  const pickAndImport = async () => {
+    try {
+      const picked = await openFileDialog({
+        multiple: false,
+        directory: false,
+        title: t("explorer.openApk"),
+        filters: [
+          { name: "Android packages", extensions: ["apk", "xapk", "apks", "apkm"] },
+          { name: "All files", extensions: ["*"] },
+        ],
+      });
+      if (typeof picked === "string" && picked !== "") {
+        importMut.mutate(picked);
+      }
+    } catch (e) {
+      setMessage({ text: describe(e), ok: false });
+    }
+  };
   importMutRef.current = importMut;
 
   const exportMut = useMutation({
@@ -135,7 +157,17 @@ export function Explorer() {
       {report.isPending ? (
         <span className="px-1 text-text-dim">{t("common.loading")}</span>
       ) : report.isError || report.data == null ? (
-        <DropHint onPick={(p) => importMut.mutate(p)} />
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            disabled={importMut.isPending}
+            onClick={() => void pickAndImport()}
+            className="rounded-md bg-accent/20 px-3 py-2 text-left font-medium text-accent hover:bg-accent/30 disabled:opacity-50"
+          >
+            {importMut.isPending ? t("explorer.importing") : t("explorer.openApk")}
+          </button>
+          <DropHint onPick={(p) => importMut.mutate(p)} />
+        </div>
       ) : (
         <>
           <TreeNodeView node={tree} depth={0} onOpen={openFile} />
@@ -145,6 +177,14 @@ export function Explorer() {
             </p>
           )}
           <div className="mt-2 flex flex-col gap-1">
+            <button
+              type="button"
+              disabled={importMut.isPending}
+              onClick={() => void pickAndImport()}
+              className="rounded-md bg-surface-2 px-3 py-1.5 text-left hover:bg-surface-2/70 disabled:opacity-50"
+            >
+              {t("explorer.openAnother")}
+            </button>
             <ActionButton label={t("explorer.reimport")} onPick={(p) => importMut.mutate(p)} />
             <button
               type="button"

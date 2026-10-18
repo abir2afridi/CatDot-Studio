@@ -1,19 +1,52 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { toolchainDetect } from "../lib/ipc";
+import { apkImport } from "../lib/apk";
 import { useUi } from "../state/ui";
 import { SystemLogsPanel } from "../components/SystemLogsPanel";
 
 export function Dashboard() {
   const { t } = useTranslation();
   const setPage = useUi((s) => s.setPage);
+  const queryClient = useQueryClient();
   const [logsOpen, setLogsOpen] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
   const { data } = useQuery({
     queryKey: ["toolchain", "summary"],
     queryFn: toolchainDetect,
     staleTime: 60_000,
   });
+
+  const importMut = useMutation({
+    mutationFn: (sourcePath: string) => apkImport(sourcePath),
+    onSuccess: () => {
+      setImportError(null);
+      void queryClient.invalidateQueries({ queryKey: ["apk"] });
+      setPage("explorer");
+    },
+    onError: (e) => setImportError(e instanceof Error ? e.message : String(e)),
+  });
+
+  const pickAndImport = async () => {
+    try {
+      const picked = await openFileDialog({
+        multiple: false,
+        directory: false,
+        title: t("explorer.openApk"),
+        filters: [
+          { name: "Android packages", extensions: ["apk", "xapk", "apks", "apkm"] },
+          { name: "All files", extensions: ["*"] },
+        ],
+      });
+      if (typeof picked === "string" && picked !== "") {
+        importMut.mutate(picked);
+      }
+    } catch (e) {
+      setImportError(e instanceof Error ? e.message : String(e));
+    }
+  };
 
   const required = data
     ? [data.java, data.aapt2, data.zipalign, data.apksigner, data.adb]
@@ -35,6 +68,18 @@ export function Dashboard() {
           {t("logs.title")}
         </button>
       </div>
+
+      <button
+        type="button"
+        disabled={importMut.isPending}
+        onClick={() => void pickAndImport()}
+        className="mt-5 rounded-md bg-accent/20 px-4 py-2 text-sm font-medium text-accent hover:bg-accent/30 disabled:opacity-50"
+      >
+        {importMut.isPending ? t("explorer.importing") : t("explorer.openApk")}
+      </button>
+      {importError != null && (
+        <p className="mt-2 text-xs text-danger">{importError}</p>
+      )}
 
       {data && (
         <div
