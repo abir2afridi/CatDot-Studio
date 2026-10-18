@@ -34,6 +34,29 @@ Session: 2026-10-18 (VS Code-style IDE shell work unit)
 - `lib/pick.ts`: shared native file-picker helper (dialog plugin), used by Explorer + palette. Removed duplicate dialog code; deleted unused `pages/Dashboard.tsx` (dead since Explorer flow landed).
 - i18n: `palette.*`, `panel.*`, `cmd.*` added to EN **and** BN (parity test green). Fixed stale Bengali app name branding (previously "APK Forge AI" in bn).
 
+## UI dedupe pass (same session, user-requested)
+- Explorer: typed-path "Import" and "Re-import path" fields removed — the
+  native picker, drag & drop and the palette command are the only (three
+  entry points to ONE) `apk_import` operation; DropHint became a plain
+  drop-target (drag-drop already listens at window level).
+- Deleted `components/SystemLogsPanel.tsx` (dead overlay once Dashboard was
+  removed); its real capabilities — level filter (All/Errors/Warnings),
+  per-entry copy, copy-all — were merged into the bottom-panel Logs tab.
+- StatusBar: sidebar toggle removed (ActivityBar + Ctrl+B own it).
+- Explorer: inline build-steps list removed (Build tab owns it).
+- Branding: repo URL fixed to `https://github.com/abir2afridi/CatDot-Studio`
+  (matching the master spec Part 0.1); i18n dead keys removed
+  (`explorer.import`, `explorer.reimport`, `logs.title`, `dashboard.title`,
+  `dashboard.subtitle`), `explorer.title` restored on the en side.
+- Gates after dedupe: typecheck PASS, lint PASS, 12 JS tests PASS
+  (incl. EN/BN parity), 73 cargo tests PASS, clippy PASS,
+  `pnpm audit:reality` PASS (26 features).
+- Installers rebuilt after dedupe: MSI 4.97 MiB (5,210,112 bytes,
+  sha256 310a1ed7ca0213c68e2b6092bceca353404c9e6038bfddfc0d4f11ae024bb35c),
+  NSIS 3.83 MiB (4,012,220 bytes,
+  sha256 c21f04a20175ef516a79b32368044989d56708d4daec3a510be465fa98a4f1a9).
+  Release exe smoke-tested 5 s alive (pid 16368).
+
 ## Honest limits (not claimed)
 - No automated UI drive: palette/shortcuts/resize behavior is typecheck + lint + build verified; runtime click-through awaits user or a later Playwright/Webdriver pass.
 - Problems tab intentionally disabled-planned (needs deeper APK analysis, Phase 4).

@@ -41,13 +41,22 @@
   `catdot-core/src/branding.rs` + `apps/desktop/src/lib/branding.ts` with
   rebrand guard tests on both sides (73 cargo / 12 JS tests); Settings
   footer shows identity + repo link.
+- **UI dedupe + audit (2026-10-18, later same day)**: removed duplicate import
+  affordances (typed-path "Import" field, "Re-import path" field — pickers,
+  drag-drop and palette now own the one real `apk_import` op); deleted the
+  dead `SystemLogsPanel` overlay and merged its richer features (level filter,
+  per-entry copy, copy-all) into the bottom-panel Logs tab; removed the
+  StatusBar sidebar toggle (ActivityBar owns it) and the Explorer's inline
+  build-steps list (Build tab owns it). Repo URL corrected to
+  `github.com/abir2afridi/CatDot-Studio` per the master spec. Honest
+  per-feature next-improvement map: `docs/FEATURE_IMPROVEMENTS.md`.
 - Open risks: apk-reverse 404 still unresolved (REFERENCE_ANALYSIS.md), Java 25
   vs JDK 17 pin (works today), i18next peer-dep warning.
-- Build state: **installers rebuilt 2026-10-18 (X1 shell + Monaco + Diff tab +
-  branding)**: `…/bundle/msi/CatDot Studio_0.1.0_x64_en-US.msi` (4.97 MiB,
-  sha256 0ca48f…5fc8) and `…/bundle/nsis/CatDot Studio_0.1.0_x64-setup.exe`
-  (3.83 MiB, sha256 6f6a01…5f29). Release exe smoke-tested (launch 5 s
-  alive, then force-killed).
+- Build state: **installers rebuilt 2026-10-18 (post-dedupe)**:
+  `…/bundle/msi/CatDot Studio_0.1.0_x64_en-US.msi` (4.97 MiB,
+  sha256 310a1e…bb35c) and `…/bundle/nsis/CatDot Studio_0.1.0_x64-setup.exe`
+  (3.83 MiB, sha256 c21f04…f1a9). Release exe smoke-tested (launch 5 s
+  alive, then force-killed; pid 16368).
 - Import UX (2026-10-18, same day, ADR-0012): added a **native APK file-picker**
   ("Open APK…" in Explorer + Dashboard) via `tauri-plugin-dialog` with only
   `dialog:allow-open` granted — previously import required drag-drop or typing
