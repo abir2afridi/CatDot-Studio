@@ -25,7 +25,7 @@ Generated from `feature-registry.json` by `pnpm audit:reality`. Do not hand-edit
 | audit-reality | audit:reality gate + FEATURE_STATUS generation | 0 | real | pnpm audit:reality |
 | reference-analysis | apk-reverse reference analysis | 0 | unverified-env | docs/REFERENCE_ANALYSIS.md: upstream repo not found (404) |
 | import-inspect | Import & inspect (F1ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“F3): drag-drop import, ZIP entry tree, SHA-256, entry preview | 2 | real | cargo test -p catdot-core workspace; apps/desktop Explorer ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ apk_import/apk_report IPC |
-| manual-edits | Manual text-entry edits with persisted patch file (F4, text entries) | 2 | real | cargo test -p catdot-core workspace::read_entry; apps/desktop EditorArea ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ apk_save_entry/apk_revert_entry + patches.json |
+| manual-edits | Manual text-entry edits with persisted patch file (F4, text entries) in a real Monaco editor | 2 | real | cargo test -p catdot-core workspace::read_entry; apps/desktop MonacoEntry to apk_save_entry/apk_revert_entry + patches.json |
 | build-sign-verify | Build ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ align ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ sign ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ verify (F5) via zipalign/apksigner/keytool | 2 | real | cargo test -p catdot-core tools::build_tools; apps/desktop Explorer ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ apk_build_sign IPC |
 | decode-apk-tools | apktool/JADX decompile ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ smali/AXML editing (requires tools installed) | 3 | disabled-planned |  |
 | guided-edit-flow | Guided multi-step edit flow with checkpoints | 3 | disabled-planned |  |
