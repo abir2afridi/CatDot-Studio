@@ -1,4 +1,4 @@
-﻿//! Build/align/sign adapters (Part F5, Phase 2/4 slice). Processes spawn ONLY
+//! Build/align/sign adapters (Part F5, Phase 2/4 slice). Processes spawn ONLY
 //! here, always from verified toolchain paths (see `detect`). Every step is a
 //! real subprocess with a hard timeout and captured stderr.
 
@@ -59,7 +59,10 @@ fn run_timeout(exe: &Path, args: &[&str], cwd: Option<&Path>, timeout: Duration)
         c.current_dir(d);
     }
     c.env("JAVA_HOME", std::env::var("JAVA_HOME").unwrap_or_default());
-    c.env("SystemRoot", std::env::var("SystemRoot").unwrap_or_default());
+    c.env(
+        "SystemRoot",
+        std::env::var("SystemRoot").unwrap_or_default(),
+    );
     c.stdout(std::process::Stdio::piped());
     c.stderr(std::process::Stdio::piped());
     let mut child = c.spawn().ok()?;
@@ -113,17 +116,21 @@ pub fn tool_paths() -> Result<(PathBuf, PathBuf, PathBuf), AppError> {
         AppError::new(
             ErrorCode::ToolNotFound,
             format!("{name} not found"),
-            format!(
-                "What happened: {name} is not installed. What to do: {fix}"
-            ),
+            format!("What happened: {name} is not installed. What to do: {fix}"),
         )
     };
-    let zipalign = t.zipalign.path.as_ref().map(PathBuf::from).ok_or_else(|| {
-        missing("zipalign", "install Android SDK build-tools")
-    })?;
-    let apksigner = t.apksigner.path.as_ref().map(PathBuf::from).ok_or_else(|| {
-        missing("apksigner", "install Android SDK build-tools")
-    })?;
+    let zipalign = t
+        .zipalign
+        .path
+        .as_ref()
+        .map(PathBuf::from)
+        .ok_or_else(|| missing("zipalign", "install Android SDK build-tools"))?;
+    let apksigner = t
+        .apksigner
+        .path
+        .as_ref()
+        .map(PathBuf::from)
+        .ok_or_else(|| missing("apksigner", "install Android SDK build-tools"))?;
     // keytool: sibling of the detected java (JBR ships it).
     let java_path = t.java.path.clone().unwrap_or_default();
     let java_dir = PathBuf::from(&java_path)
@@ -146,7 +153,10 @@ pub fn tool_paths() -> Result<(PathBuf, PathBuf, PathBuf), AppError> {
 
 /// Ensure a debug keystore exists (auto-created once with a fixed alias).
 /// Passphrase is knowledge-embedded for the debug keystore only (release keystores must never hardcode secrets; Phase 4 adds the keystore manager).
-pub fn ensure_keystore(data_dir: &Path, keytool: &Path) -> Result<(PathBuf, String, String), AppError> {
+pub fn ensure_keystore(
+    data_dir: &Path,
+    keytool: &Path,
+) -> Result<(PathBuf, String, String), AppError> {
     std::fs::create_dir_all(data_dir.join("keys"))?;
     let ks = data_dir.join("keys").join("catdot-debug.jks");
     const STORE_PASS: &str = "catdot-local";
@@ -212,7 +222,12 @@ pub fn align_and_sign(
     // 1) zipalign -f 4 in out
     let r = run(
         &zipalign,
-        &["-f", "4", unsigned.to_string_lossy().as_ref(), aligned.to_string_lossy().as_ref()],
+        &[
+            "-f",
+            "4",
+            unsigned.to_string_lossy().as_ref(),
+            aligned.to_string_lossy().as_ref(),
+        ],
         Some(workdir),
         Duration::from_secs(300),
     )
@@ -359,16 +374,16 @@ mod tests {
         // Real pipeline: aapt2-built APK â†’ zipalign â†’ apksigner sign â†’ verify.
         // Skips (UNVERIFIED-ENV) when aapt2/android.jar/build-tools are absent.
         let t = detect_toolchain();
-        let Some(aapt2) = t.aapt2.path.as_ref().map(PathBuf::from) else { return };
-        if !(aapt2.is_file()
-            && t.apksigner.found
-            && t.zipalign.found
-            && t.java.found)
-        {
+        let Some(aapt2) = t.aapt2.path.as_ref().map(PathBuf::from) else {
+            return;
+        };
+        if !(aapt2.is_file() && t.apksigner.found && t.zipalign.found && t.java.found) {
             return; // UNVERIFIED-ENV
         }
         let android_jar = find_android_jar();
-        let Some(android_jar) = android_jar else { return };
+        let Some(android_jar) = android_jar else {
+            return;
+        };
         let dir = std::env::temp_dir().join(format!("catdot-build-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
 
@@ -406,15 +421,28 @@ mod tests {
         assert!(unsigned.is_file());
 
         // Build pipeline on the real APK.
-        let (ks, pass, alias) = ensure_keystore(&dir, &t.java.path.as_ref().map(PathBuf::from).unwrap().parent().unwrap().join("keytool.exe")).expect("keystore");
+        let (ks, pass, alias) = ensure_keystore(
+            &dir,
+            &t.java
+                .path
+                .as_ref()
+                .map(PathBuf::from)
+                .unwrap()
+                .parent()
+                .unwrap()
+                .join("keytool.exe"),
+        )
+        .expect("keystore");
         let aligned = dir.join("aligned.apk");
         let signed = dir.join("signed.apk");
-        let rep =
-            align_and_sign(&unsigned, &aligned, &signed, &dir, &ks, &pass, &alias)
-                .expect("align+sign");
+        let rep = align_and_sign(&unsigned, &aligned, &signed, &dir, &ks, &pass, &alias)
+            .expect("align+sign");
         assert!(aligned.is_file());
         assert!(signed.is_file());
-        assert!(rep.steps.iter().all(|s| s.exit_code == 0), "all steps exit 0");
+        assert!(
+            rep.steps.iter().all(|s| s.exit_code == 0),
+            "all steps exit 0"
+        );
         assert!(rep.aligned_verified, "zipalign -c must pass");
         assert!(rep.signature_verified, "apksigner verify must pass");
         let _ = std::fs::remove_dir_all(&dir);
@@ -426,7 +454,10 @@ mod tests {
         let bt = t.apksigner.path.as_ref()?;
         // apksigner(.bat) lives in build-tools/<ver>/ â†’ SDK root is 3 levels up.
         let p = PathBuf::from(bt);
-        let sdk = p.parent().and_then(|d| d.parent()).and_then(|d| d.parent())?;
+        let sdk = p
+            .parent()
+            .and_then(|d| d.parent())
+            .and_then(|d| d.parent())?;
         let mut plats: Vec<(u32, PathBuf)> = Vec::new();
         for e in std::fs::read_dir(sdk.join("platforms")).ok()? {
             let e = e.ok()?;

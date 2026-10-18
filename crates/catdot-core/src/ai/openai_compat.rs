@@ -15,8 +15,8 @@ use ts_rs::TS;
 use crate::errors::{AppError, ErrorCode};
 
 use super::{
-    ChatMessage, ConnectionFailure, Provider, ProviderCapabilities,
-    auth_error, classify_http_status,
+    auth_error, classify_http_status, ChatMessage, ConnectionFailure, Provider,
+    ProviderCapabilities,
 };
 
 type BoxFut<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
@@ -64,7 +64,11 @@ impl OpenAICompat {
             .connect_timeout(Duration::from_secs(15))
             .build()
             .unwrap_or_default();
-        Self { cfg, api_key, client }
+        Self {
+            cfg,
+            api_key,
+            client,
+        }
     }
 
     fn url(&self, path: &str) -> String {
@@ -194,18 +198,26 @@ impl Provider for OpenAICompat {
                 while let Some(idx) = buf.find('\n') {
                     let line: String = buf.drain(..=idx).collect();
                     let line = line.trim();
-                    let Some(data) = line.strip_prefix("data:") else { continue };
+                    let Some(data) = line.strip_prefix("data:") else {
+                        continue;
+                    };
                     let data = data.trim();
                     if data == "[DONE]" {
-                        let _ = tx.send(AiStreamEvent::Done { text: full.clone(), usage });
+                        let _ = tx.send(AiStreamEvent::Done {
+                            text: full.clone(),
+                            usage,
+                        });
                         return Ok(usage);
                     }
                     if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(data) {
-                        let delta =
-                            parsed["choices"][0]["delta"]["content"].as_str().unwrap_or("");
+                        let delta = parsed["choices"][0]["delta"]["content"]
+                            .as_str()
+                            .unwrap_or("");
                         if !delta.is_empty() {
                             full.push_str(delta);
-                            let _ = tx.send(AiStreamEvent::Chunk { text: delta.to_string() });
+                            let _ = tx.send(AiStreamEvent::Chunk {
+                                text: delta.to_string(),
+                            });
                         }
                         if let (Some(p), Some(c)) = (
                             parsed["usage"]["prompt_tokens"].as_u64(),
@@ -220,7 +232,10 @@ impl Provider for OpenAICompat {
                 }
             }
             // Stream ended without [DONE]; treat what we have as done.
-            let _ = tx.send(AiStreamEvent::Done { text: full.clone(), usage });
+            let _ = tx.send(AiStreamEvent::Done {
+                text: full.clone(),
+                usage,
+            });
             Ok(usage)
         })
     }
@@ -269,14 +284,26 @@ mod tests {
     }
 
     fn chat_msg() -> Vec<ChatMessage> {
-        vec![ChatMessage { role: "user".into(), content: "hi".into() }]
+        vec![ChatMessage {
+            role: "user".into(),
+            content: "hi".into(),
+        }]
     }
 
     #[tokio::test]
     async fn test_connection_success() {
-        let (base, h) = spawn_server("HTTP/1.1 200 OK", "application/json", r#"{"data":[]}"#.into()).await;
+        let (base, h) = spawn_server(
+            "HTTP/1.1 200 OK",
+            "application/json",
+            r#"{"data":[]}"#.into(),
+        )
+        .await;
         let p = OpenAICompat::new(
-            OpenAICompatConfig { base_url: base, default_model: "m".into(), key_account: "k".into() },
+            OpenAICompatConfig {
+                base_url: base,
+                default_model: "m".into(),
+                key_account: "k".into(),
+            },
             "test-key".into(),
         );
         let caps = p.test_connection().await.expect("caps");
@@ -286,9 +313,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_connection_401_is_auth_error() {
-        let (base, h) = spawn_server("HTTP/1.1 401 Unauthorized", "application/json", "{}".into()).await;
+        let (base, h) =
+            spawn_server("HTTP/1.1 401 Unauthorized", "application/json", "{}".into()).await;
         let p = OpenAICompat::new(
-            OpenAICompatConfig { base_url: base, default_model: "m".into(), key_account: "k".into() },
+            OpenAICompatConfig {
+                base_url: base,
+                default_model: "m".into(),
+                key_account: "k".into(),
+            },
             "bad".into(),
         );
         let err = p.test_connection().await.expect_err("should fail");
@@ -298,9 +330,18 @@ mod tests {
 
     #[tokio::test]
     async fn test_connection_429_is_rate_limited_retryable() {
-        let (base, h) = spawn_server("HTTP/1.1 429 Too Many Requests", "application/json", "{}".into()).await;
+        let (base, h) = spawn_server(
+            "HTTP/1.1 429 Too Many Requests",
+            "application/json",
+            "{}".into(),
+        )
+        .await;
         let p = OpenAICompat::new(
-            OpenAICompatConfig { base_url: base, default_model: "m".into(), key_account: "k".into() },
+            OpenAICompatConfig {
+                base_url: base,
+                default_model: "m".into(),
+                key_account: "k".into(),
+            },
             "k".into(),
         );
         let err = p.test_connection().await.expect_err("should fail");
@@ -319,12 +360,19 @@ mod tests {
         .to_string();
         let (base, h) = spawn_server("HTTP/1.1 200 OK", "text/event-stream", sse).await;
         let p = OpenAICompat::new(
-            OpenAICompatConfig { base_url: base, default_model: "m".into(), key_account: "k".into() },
+            OpenAICompatConfig {
+                base_url: base,
+                default_model: "m".into(),
+                key_account: "k".into(),
+            },
             "k".into(),
         );
         let (tx, mut rx) = mpsc::unbounded_channel();
         let cancel = AtomicBool::new(false);
-        let usage = p.stream_chat(&chat_msg(), "m", tx, &cancel).await.expect("stream");
+        let usage = p
+            .stream_chat(&chat_msg(), "m", tx, &cancel)
+            .await
+            .expect("stream");
         assert_eq!(usage.completion_tokens, 0);
         let mut full = String::new();
         while let Some(ev) = rx.recv().await {
@@ -339,7 +387,9 @@ mod tests {
     #[tokio::test]
     async fn stream_chat_respects_cancellation() {
         // Server that sends one chunk then hangs (no [DONE]) so cancel can fire.
-        let listener = TcpListener::bind::<SocketAddr>("127.0.0.1:0".parse().unwrap()).await.unwrap();
+        let listener = TcpListener::bind::<SocketAddr>("127.0.0.1:0".parse().unwrap())
+            .await
+            .unwrap();
         let addr = listener.local_addr().unwrap();
         tokio::spawn(async move {
             if let Ok((mut sock, _)) = listener.accept().await {
@@ -347,18 +397,27 @@ mod tests {
                 let _ = sock.read(&mut buf).await;
                 let head = "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nConnection: close\r\n\r\n";
                 let _ = sock.write_all(head.as_bytes()).await;
-                let _ = sock.write_all(b"data: {\"choices\":[{\"delta\":{\"content\":\"x\"}}]}\n\n").await;
+                let _ = sock
+                    .write_all(b"data: {\"choices\":[{\"delta\":{\"content\":\"x\"}}]}\n\n")
+                    .await;
                 // Keep the connection open; the client should cancel.
                 tokio::time::sleep(Duration::from_secs(5)).await;
             }
         });
         let p = OpenAICompat::new(
-            OpenAICompatConfig { base_url: format!("http://{addr}/v1"), default_model: "m".into(), key_account: "k".into() },
+            OpenAICompatConfig {
+                base_url: format!("http://{addr}/v1"),
+                default_model: "m".into(),
+                key_account: "k".into(),
+            },
             "k".into(),
         );
         let (tx, _rx) = mpsc::unbounded_channel();
         let cancel = AtomicBool::new(true); // pre-cancelled
-        let err = p.stream_chat(&chat_msg(), "m", tx, &cancel).await.expect_err("cancelled");
+        let err = p
+            .stream_chat(&chat_msg(), "m", tx, &cancel)
+            .await
+            .expect_err("cancelled");
         assert_eq!(err.code, ErrorCode::ToolCancelled);
     }
 }

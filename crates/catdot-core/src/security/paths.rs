@@ -1,4 +1,4 @@
-﻿//! Path sandbox (Part E1).
+//! Path sandbox (Part E1).
 //! Every UI/AI-requested filesystem operation must go through
 //! [`resolve_in_project`], which rejects escapes before touching disk.
 
@@ -122,10 +122,7 @@ fn validate_segment(seg: &str) -> Result<(), AppError> {
     }
     // Reserved names: compare stem before first '.'.
     let stem = seg.split('.').next().unwrap_or(seg);
-    if RESERVED_NAMES
-        .iter()
-        .any(|r| r.eq_ignore_ascii_case(stem))
-    {
+    if RESERVED_NAMES.iter().any(|r| r.eq_ignore_ascii_case(stem)) {
         return Err(denied(format!("reserved device name `{seg}`")));
     }
     if seg.chars().any(|c| c.is_control()) {

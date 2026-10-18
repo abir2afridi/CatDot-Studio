@@ -24,18 +24,27 @@
 - Next 3 steps:
   1. Guided-edit flow (Phase 3): pending-checkpoint list, before/after diff,
      restore point per export.
-  2. adb install flow (device/emulator permitting) + branding config module
-     (`branding.ts` + Rust const) so name/logo/colors live in one place.
-  3. Full manual UI drive (`tauri dev`) of the improved Explorer (revert-all,
-     badges) — currently compile/typecheck-verified only.
+  2. Runtime UI drive (Playwright/Webdriver or guided `tauri dev` walk) to
+     verify palette/shortcuts/resize live — compile/typecheck-verified only.
+  3. adb install flow (device permitting) + branding config module.
 - Open risks: apk-reverse 404 still unresolved (REFERENCE_ANALYSIS.md), Java 25
   vs JDK 17 pin (works today), i18next peer-dep warning.
-- Build state: **installers built 2026-10-18** (latest, with the native APK
-  file-picker): `apps/desktop/src-tauri/target/release/bundle/msi/CatDot
-  Studio_0.1.0_x64_en-US.msi` (4.10 MiB, sha256 3f50…cf01) and
-  `…/nsis/CatDot Studio_0.1.0_x64-setup.exe` (2.94 MiB, sha256 14bc…7060).
-  Release exe smoke-tested (launch 5 s alive, then force-killed).
+- Build state: **installers rebuilt 2026-10-18 with the X1 IDE shell**:
+  `apps/desktop/src-tauri/target/release/bundle/msi/CatDot Studio_0.1.0_x64_en-US.msi`
+  (4.10 MiB, sha256 0a80…6ead) and `…/nsis/CatDot Studio_0.1.0_x64-setup.exe`
+  (2.95 MiB, sha256 9148…76b8). Release exe smoke-tested (launch 5 s alive,
+  then force-killed).
 - Import UX (2026-10-18, same day, ADR-0012): added a **native APK file-picker**
   ("Open APK…" in Explorer + Dashboard) via `tauri-plugin-dialog` with only
   `dialog:allow-open` granted — previously import required drag-drop or typing
   an absolute path, which read as "import doesn't work".
+- **IDE shell (X1) landed 2026-10-18** (orientation engineering): command
+  palette (Ctrl+Shift+P / Ctrl+K) over real commands with honest disabled
+  reasons; global shortcut hooks (Ctrl+B/J/S/W); bottom panel with real Logs
+  + Build-report tabs and a disabled-planned Problems tab (Phase 4); drag +
+  arrow-key resizable sidebar and panel persisted to the settings DB
+  (`ui.explorerWidth` / `ui.bottomHeight`); editor drafts in UI state with
+  tab dot-badges; breadcrumbs; caret Line/Col in the status bar; one-shot
+  save request; transient notices via CSS fade (no JS timers —
+  audit:reality clean); shared file-picker `lib/pick.ts`; dead
+  `pages/Dashboard.tsx` removed. Evidence: `docs/EVIDENCE/phase-1-ide-shell.md`.

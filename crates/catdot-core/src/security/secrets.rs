@@ -1,4 +1,4 @@
-﻿//! Secret store (Part E5): Windows Credential Manager only; never DB/logs.
+//! Secret store (Part E5): Windows Credential Manager only; never DB/logs.
 //! Phase 0 ships the trait + in-memory impl (tests) + `keyring`-backed
 //! Windows store (see ADR 0003). Passwords pass in-memory only.
 
@@ -83,10 +83,10 @@ impl SecretStore for MemorySecretStore {
                 "What happened: a secret could not be saved. What to do: retry.",
             ));
         }
-        self.inner.lock().expect("store").insert(
-            (service.into(), account.into()),
-            secret.into(),
-        );
+        self.inner
+            .lock()
+            .expect("store")
+            .insert((service.into(), account.into()), secret.into());
         Ok(())
     }
     fn get(&self, service: &str, account: &str) -> Result<Option<String>, AppError> {
@@ -115,7 +115,10 @@ mod tests {
         let s = MemorySecretStore::new();
         assert_eq!(s.get("svc", "acct").expect("get"), None);
         s.set("svc", "acct", "s3cr3t").expect("set");
-        assert_eq!(s.get("svc", "acct").expect("get").as_deref(), Some("s3cr3t"));
+        assert_eq!(
+            s.get("svc", "acct").expect("get").as_deref(),
+            Some("s3cr3t")
+        );
         s.delete("svc", "acct").expect("del");
         assert_eq!(s.get("svc", "acct").expect("get"), None);
     }

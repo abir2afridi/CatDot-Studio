@@ -30,13 +30,32 @@ pub enum JobState {
 #[ts(export)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum JobEvent {
-    Queued { job_id: String },
-    Running { job_id: String },
-    Progress { job_id: String, fraction: Option<f32>, step: String },
-    Log { job_id: String, level: String, line: String },
-    Succeeded { job_id: String },
-    Failed { job_id: String, error: String },
-    Cancelled { job_id: String },
+    Queued {
+        job_id: String,
+    },
+    Running {
+        job_id: String,
+    },
+    Progress {
+        job_id: String,
+        fraction: Option<f32>,
+        step: String,
+    },
+    Log {
+        job_id: String,
+        level: String,
+        line: String,
+    },
+    Succeeded {
+        job_id: String,
+    },
+    Failed {
+        job_id: String,
+        error: String,
+    },
+    Cancelled {
+        job_id: String,
+    },
 }
 
 /// Parameters for a command job. `program` must be an absolute verified
@@ -68,7 +87,10 @@ pub async fn run_command_job(
         .current_dir(&spec.cwd)
         .env_clear()
         .env("PATH", std::env::var("PATH").unwrap_or_default())
-        .env("SystemRoot", std::env::var("SystemRoot").unwrap_or_default())
+        .env(
+            "SystemRoot",
+            std::env::var("SystemRoot").unwrap_or_default(),
+        )
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .kill_on_drop(true);
@@ -209,7 +231,10 @@ mod tests {
             .expect("join timeout")
             .expect("task join");
         assert!(res.is_err(), "cancelled job must return Err(ToolCancelled)");
-        assert!(start.elapsed() < Duration::from_secs(20), "cancel must be fast");
+        assert!(
+            start.elapsed() < Duration::from_secs(20),
+            "cancel must be fast"
+        );
         // Drain events; must observe Cancelled and then channel close.
         let mut saw_cancelled = false;
         let drain = tokio::time::timeout(Duration::from_secs(5), async {
@@ -244,11 +269,8 @@ mod tests {
     #[test]
     fn orphan_recovery_marks_failed() {
         let conn = crate::storage::open_memory().expect("db");
-        conn.execute(
-            "INSERT INTO projects(id,name,path) VALUES('p','n','x')",
-            [],
-        )
-        .expect("proj");
+        conn.execute("INSERT INTO projects(id,name,path) VALUES('p','n','x')", [])
+            .expect("proj");
         conn.execute(
             "INSERT INTO jobs(id,project_id,kind,state) VALUES('j1','p','build','running')",
             [],

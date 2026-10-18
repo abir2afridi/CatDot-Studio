@@ -1,4 +1,4 @@
-﻿//! APK workspace engine (Part F1â€“F4, Phase 2 slice): import â†’ inspect â†’ patch
+//! APK workspace engine (Part F1â€“F4, Phase 2 slice): import â†’ inspect â†’ patch
 //! â†’ export. Reads the original APK via the `zip` crate. F0 rule: the original
 //! APK is never modified â€” import copies it into the workspace, every export
 //! writes a NEW file. No apktool/JADX needed for these flows.
@@ -70,8 +70,8 @@ fn unknown_entry(p: &str) -> AppError {
 /// (`PK\x03\x04`) — detection is by content, not extension (Part F1).
 pub fn import_apk(source: &Path, workspace_root: &Path) -> Result<ApkReport, AppError> {
     std::fs::create_dir_all(workspace_root)?;
-    let meta = std::fs::metadata(source)
-        .map_err(|e| read_err(format!("cannot read source: {e}")))?;
+    let meta =
+        std::fs::metadata(source).map_err(|e| read_err(format!("cannot read source: {e}")))?;
     if meta.len() > MAX_APK_BYTES {
         return Err(read_err("source APK exceeds the 2 GiB limit"));
     }
@@ -80,8 +80,7 @@ pub fn import_apk(source: &Path, workspace_root: &Path) -> Result<ApkReport, App
     }
     reject_non_zip(source)?;
     let target = workspace_root.join("original.apk");
-    std::fs::copy(source, &target)
-        .map_err(|e| read_err(format!("copy failed: {e}")))?;
+    std::fs::copy(source, &target).map_err(|e| read_err(format!("copy failed: {e}")))?;
     report_of(&target, "original.apk")
 }
 
@@ -89,8 +88,8 @@ pub fn import_apk(source: &Path, workspace_root: &Path) -> Result<ApkReport, App
 /// The check runs BEFORE anything is copied, so a bad file never reaches the
 /// workspace.
 fn reject_non_zip(source: &Path) -> Result<(), AppError> {
-    let mut f = std::fs::File::open(source)
-        .map_err(|e| read_err(format!("cannot open source: {e}")))?;
+    let mut f =
+        std::fs::File::open(source).map_err(|e| read_err(format!("cannot open source: {e}")))?;
     let mut magic = [0u8; 4];
     let n = f
         .read(&mut magic)
@@ -106,11 +105,12 @@ fn reject_non_zip(source: &Path) -> Result<(), AppError> {
 
 /// Scan the APK's central directory and build a report.
 pub fn report_of(apk_path: &Path, name: &str) -> Result<ApkReport, AppError> {
-    let f = std::fs::File::open(apk_path)
-        .map_err(|e| read_err(format!("cannot open APK: {e}")))?;
-    let total_size = f.metadata().map_err(|e| read_err(format!("metadata: {e}")))?.len();
-    let mut ar = ZipArchive::new(f)
-        .map_err(|e| read_err(format!("not a valid APK/ZIP: {e}")))?;
+    let f = std::fs::File::open(apk_path).map_err(|e| read_err(format!("cannot open APK: {e}")))?;
+    let total_size = f
+        .metadata()
+        .map_err(|e| read_err(format!("metadata: {e}")))?
+        .len();
+    let mut ar = ZipArchive::new(f).map_err(|e| read_err(format!("not a valid APK/ZIP: {e}")))?;
     if ar.len() > MAX_ENTRIES {
         return Err(read_err(format!(
             "archive has {} entries (limit {MAX_ENTRIES})",
@@ -176,10 +176,8 @@ pub fn sha256_str(s: &str) -> String {
 
 /// Read one text entry (UTF-8; binary-safe error otherwise).
 pub fn read_entry(apk_path: &Path, entry_path: &str) -> Result<String, AppError> {
-    let f = std::fs::File::open(apk_path)
-        .map_err(|e| read_err(format!("cannot open APK: {e}")))?;
-    let mut ar = ZipArchive::new(f)
-        .map_err(|e| read_err(format!("bad APK: {e}")))?;
+    let f = std::fs::File::open(apk_path).map_err(|e| read_err(format!("cannot open APK: {e}")))?;
+    let mut ar = ZipArchive::new(f).map_err(|e| read_err(format!("bad APK: {e}")))?;
     let mut e = ar
         .by_name(entry_path)
         .map_err(|_| unknown_entry(entry_path))?;
@@ -216,7 +214,8 @@ pub fn export_apk(
             ));
         }
     }
-    let unique: HashMap<&str, &Patch> = patches.iter().map(|p| (p.entry_path.as_str(), p)).collect();
+    let unique: HashMap<&str, &Patch> =
+        patches.iter().map(|p| (p.entry_path.as_str(), p)).collect();
     if unique.len() != patches.len() {
         return Err(AppError::new(
             ErrorCode::InvalidInput,
@@ -225,10 +224,9 @@ pub fn export_apk(
         ));
     }
 
-    let f_in = std::fs::File::open(source_apk)
-        .map_err(|e| read_err(format!("cannot open APK: {e}")))?;
-    let mut ar = ZipArchive::new(f_in)
-        .map_err(|e| read_err(format!("bad APK: {e}")))?;
+    let f_in =
+        std::fs::File::open(source_apk).map_err(|e| read_err(format!("cannot open APK: {e}")))?;
+    let mut ar = ZipArchive::new(f_in).map_err(|e| read_err(format!("bad APK: {e}")))?;
 
     // Pre-validate every patch target against the archive before writing.
     for name in unique.keys() {
@@ -253,16 +251,16 @@ pub fn export_apk(
         };
         match unique.get(path.as_str()) {
             Some(p) => {
-                let opts: SimpleFileOptions = SimpleFileOptions::default()
-                    .compression_method(CompressionMethod::Deflated);
+                let opts: SimpleFileOptions =
+                    SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
                 zw.start_file(path.clone(), opts)
                     .map_err(|e| read_err(format!("write entry: {e}")))?;
                 std::io::copy(&mut p.content.as_bytes(), &mut zw)
                     .map_err(|e| read_err(format!("write failed: {e}")))?;
             }
             None => {
-                let opts: SimpleFileOptions = SimpleFileOptions::default()
-                    .compression_method(method);
+                let opts: SimpleFileOptions =
+                    SimpleFileOptions::default().compression_method(method);
                 if is_dir {
                     zw.add_directory(path.clone(), opts)
                         .map_err(|er| read_err(format!("write dir: {er}")))?;
@@ -278,7 +276,10 @@ pub fn export_apk(
             }
         }
     }
-    let bytes = zw.finish().map_err(|e| read_err(format!("finish: {e}")))?.into_inner();
+    let bytes = zw
+        .finish()
+        .map_err(|e| read_err(format!("finish: {e}")))?
+        .into_inner();
     if let Some(parent) = out_path.parent() {
         std::fs::create_dir_all(parent)?;
     }
@@ -309,8 +310,8 @@ pub fn workspace_root_for(data_dir: &Path, project_id: &str) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::tests_util::make_test_zip;
-    use sha2::Digest as _;
     use crate::errors::ErrorCode;
+    use sha2::Digest as _;
     use std::path::PathBuf;
 
     fn tmp_dir(tag: &str) -> PathBuf {
@@ -369,8 +370,7 @@ mod tests {
             entry_path: "assets/a.xml".into(),
             content: "patched text".into(),
         }];
-        let out_sha =
-            super::export_apk(&dir.join("original.apk"), &patches, &out).expect("export");
+        let out_sha = super::export_apk(&dir.join("original.apk"), &patches, &out).expect("export");
         // New file: different checksum; original untouched.
         assert_ne!(out_sha, orig_sha);
         assert_eq!(super::sha256_file(&apk).unwrap(), orig_sha);
@@ -378,7 +378,10 @@ mod tests {
             super::read_entry(&out, "assets/a.xml").unwrap(),
             "patched text"
         );
-        assert_eq!(super::read_entry(&out, "assets/keep.json").unwrap(), "{\"k\":1}");
+        assert_eq!(
+            super::read_entry(&out, "assets/keep.json").unwrap(),
+            "{\"k\":1}"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -405,8 +408,14 @@ mod tests {
         super::import_apk(&apk, &dir).unwrap();
         let out = dir.join("out.apk");
         let patches = vec![
-            super::Patch { entry_path: "a.xml".into(), content: "one".into() },
-            super::Patch { entry_path: "a.xml".into(), content: "two".into() },
+            super::Patch {
+                entry_path: "a.xml".into(),
+                content: "one".into(),
+            },
+            super::Patch {
+                entry_path: "a.xml".into(),
+                content: "two".into(),
+            },
         ];
         assert!(super::export_apk(&dir.join("original.apk"), &patches, &out).is_err());
         let _ = std::fs::remove_dir_all(&dir);
@@ -474,9 +483,10 @@ mod tests {
 
     #[test]
     fn patch_summary_lists_entries() {
-        let s = super::patch_summary(&[
-            super::Patch { entry_path: "a.xml".into(), content: "x".into() },
-        ]);
+        let s = super::patch_summary(&[super::Patch {
+            entry_path: "a.xml".into(),
+            content: "x".into(),
+        }]);
         assert_eq!(s.count, 1);
         assert_eq!(s.entries, vec!["a.xml".to_string()]);
     }
@@ -490,13 +500,19 @@ pub mod tests_util {
 
     /// Build a real ZIP on disk with the given (name, content) entries.
     pub fn make_test_zip(entries: &[(&str, &str)]) -> PathBuf {
-        build_zip(entries, SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated))
+        build_zip(
+            entries,
+            SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated),
+        )
     }
 
     /// Build a real ZIP whose entries are STORED (uncompressed) — mirrors
     /// resources.arsc in real APKs (targetSdk ≥ 30 requires Stored + aligned).
     pub fn make_test_zip_stored(entries: &[(&str, &str)]) -> PathBuf {
-        build_zip(entries, SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored))
+        build_zip(
+            entries,
+            SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored),
+        )
     }
 
     fn build_zip(entries: &[(&str, &str)], opts: SimpleFileOptions) -> PathBuf {

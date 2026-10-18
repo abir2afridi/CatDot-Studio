@@ -74,7 +74,8 @@ pub fn check(
 ) -> Decision {
     if tier == RiskTier::NetworkSend && !net_consent {
         return Decision::NeedApproval {
-            reason: "first content-bearing network request needs consent (what will be sent)".into(),
+            reason: "first content-bearing network request needs consent (what will be sent)"
+                .into(),
         };
     }
     match level {
@@ -110,9 +111,7 @@ pub fn check(
             RiskTier::NetworkSend => need_approval("sending data off-machine needs consent"),
         },
         AccessLevel::L5FullPipeline => match tier {
-            RiskTier::Read | RiskTier::Edit | RiskTier::Build | RiskTier::Device => {
-                Decision::Allow
-            }
+            RiskTier::Read | RiskTier::Edit | RiskTier::Build | RiskTier::Device => Decision::Allow,
             RiskTier::Destructive => {
                 need_approval("destructive actions always need explicit confirmation")
             }
@@ -171,7 +170,13 @@ mod tests {
             RiskTier::NetworkSend,
         ] {
             assert!(matches!(
-                check(AccessLevel::L0ChatOnly, Autonomy::ConfirmEach, tier, true, true),
+                check(
+                    AccessLevel::L0ChatOnly,
+                    Autonomy::ConfirmEach,
+                    tier,
+                    true,
+                    true
+                ),
                 Decision::Deny { .. }
             ));
         }
@@ -180,15 +185,33 @@ mod tests {
     #[test]
     fn l1_requires_scope_approval_for_reads() {
         assert!(matches!(
-            check(AccessLevel::L1ReadSelected, Autonomy::ConfirmEach, RiskTier::Read, true, true),
+            check(
+                AccessLevel::L1ReadSelected,
+                Autonomy::ConfirmEach,
+                RiskTier::Read,
+                true,
+                true
+            ),
             Decision::Allow
         ));
         assert!(matches!(
-            check(AccessLevel::L1ReadSelected, Autonomy::ConfirmEach, RiskTier::Read, false, true),
+            check(
+                AccessLevel::L1ReadSelected,
+                Autonomy::ConfirmEach,
+                RiskTier::Read,
+                false,
+                true
+            ),
             Decision::Deny { .. }
         ));
         assert!(matches!(
-            check(AccessLevel::L1ReadSelected, Autonomy::ConfirmEach, RiskTier::Edit, true, true),
+            check(
+                AccessLevel::L1ReadSelected,
+                Autonomy::ConfirmEach,
+                RiskTier::Edit,
+                true,
+                true
+            ),
             Decision::Deny { .. }
         ));
     }
@@ -200,7 +223,13 @@ mod tests {
             AccessLevel::L4AutoEdit,
             AccessLevel::L5FullPipeline,
         ] {
-            let d = check(level, Autonomy::FullPipeline, RiskTier::Destructive, true, true);
+            let d = check(
+                level,
+                Autonomy::FullPipeline,
+                RiskTier::Destructive,
+                true,
+                true,
+            );
             assert!(
                 !matches!(d, Decision::Allow),
                 "destructive must never auto-allow at {level:?}"
@@ -224,15 +253,33 @@ mod tests {
     fn full_matrix_spot_checks() {
         // L2 reads; L4 auto-edits; L5 full pipeline minus destructive.
         assert!(matches!(
-            check(AccessLevel::L2ReadWorkspace, Autonomy::ConfirmEach, RiskTier::Read, false, true),
+            check(
+                AccessLevel::L2ReadWorkspace,
+                Autonomy::ConfirmEach,
+                RiskTier::Read,
+                false,
+                true
+            ),
             Decision::Allow
         ));
         assert!(matches!(
-            check(AccessLevel::L4AutoEdit, Autonomy::ConfirmEach, RiskTier::Edit, false, true),
+            check(
+                AccessLevel::L4AutoEdit,
+                Autonomy::ConfirmEach,
+                RiskTier::Edit,
+                false,
+                true
+            ),
             Decision::Allow
         ));
         assert!(matches!(
-            check(AccessLevel::L5FullPipeline, Autonomy::FullPipeline, RiskTier::Device, false, true),
+            check(
+                AccessLevel::L5FullPipeline,
+                Autonomy::FullPipeline,
+                RiskTier::Device,
+                false,
+                true
+            ),
             Decision::Allow
         ));
     }

@@ -15,7 +15,9 @@ use crate::errors::{AppError, ErrorCode};
 
 pub mod openai_compat;
 
-pub use openai_compat::{AiStreamEvent, ChatUsage, OpenAICompat, OpenAICompatConfig, payload_audit};
+pub use openai_compat::{
+    payload_audit, AiStreamEvent, ChatUsage, OpenAICompat, OpenAICompatConfig,
+};
 
 /// Object-safe boxed future used by [`Provider`].
 type BoxFut<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
@@ -134,8 +136,13 @@ impl Provider for MockProvider {
                     "What happened: no message was sent. What to do: type a message first.",
                 ));
             }
-            let _ = tx.send(AiStreamEvent::Chunk { text: reply.clone() });
-            let usage = ChatUsage { prompt_tokens: 0, completion_tokens: reply.len() as u32 / 4 };
+            let _ = tx.send(AiStreamEvent::Chunk {
+                text: reply.clone(),
+            });
+            let usage = ChatUsage {
+                prompt_tokens: 0,
+                completion_tokens: reply.len() as u32 / 4,
+            };
             let _ = tx.send(AiStreamEvent::Done { text: reply, usage });
             Ok(usage)
         })
@@ -161,7 +168,13 @@ mod tests {
         let caps = p.test_connection().await.expect("caps");
         assert!(caps.streaming);
         let out = p
-            .chat(&[ChatMessage { role: "user".into(), content: "hi".into() }], "test")
+            .chat(
+                &[ChatMessage {
+                    role: "user".into(),
+                    content: "hi".into(),
+                }],
+                "test",
+            )
             .await
             .expect("chat");
         assert_eq!(out, "hello");

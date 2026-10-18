@@ -5,4 +5,4 @@ pub mod build_tools;
 pub mod detect;
 
 pub use build_tools::{align_and_sign, ensure_keystore, tool_paths, BuildReport, SignStep};
-pub use detect::{ToolInfo, ToolchainReport, detect_toolchain};
+pub use detect::{detect_toolchain, ToolInfo, ToolchainReport};

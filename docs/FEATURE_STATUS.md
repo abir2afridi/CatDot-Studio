@@ -15,6 +15,7 @@ Generated from `feature-registry.json` by `pnpm audit:reality`. Do not hand-edit
 | secrets-credential-manager | Secret store (Windows Credential Manager, keyring v1) | 0 | real | cargo test -p catdot-core security::secrets |
 | ts-rs-type-gen | IPC type generation (ts-rs ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ shared-types) | 0 | real | cargo test -p catdot-core export_bindings; pnpm typecheck |
 | app-shell | App shell (nav, disabled-planned badges, status bar) | 0 | real | pnpm --filter desktop build; pnpm --filter desktop typecheck |
+| ide-shell-x1 | IDE shell (X1): command palette, bottom Logs/Build panel, resizable layout persisted to settings DB | 1 | real | pnpm test (commands-filter, i18n parity); pnpm typecheck; pnpm lint; cargo test -p catdot-core (settings persistence); pnpm tauri build |
 | settings-persistence | Settings persistence (SQLite, real IPC) | 0 | real | cargo test -p catdot-core storage::settings; apps/desktop Settings page |
 | system-check-ui | System check UI (real toolchain detect) | 0 | real | apps/desktop SystemCheck page ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ toolchain_detect IPC |
 | system-logs | System Logs panel (real error capture + copy) | 0 | real | cargo test -p catdot-core logs; apps/desktop Dashboard ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ logs_recent / log://entry |

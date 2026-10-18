@@ -60,13 +60,15 @@ pub fn detect_toolchain() -> ToolchainReport {
         ),
         adb: probe_exe(
             "adb",
-            sdk.as_ref().map(|s| s.join("platform-tools").join("adb.exe")),
+            sdk.as_ref()
+                .map(|s| s.join("platform-tools").join("adb.exe")),
             "Installs apps and reads device logs",
             "Install Android SDK platform-tools",
         ),
         emulator: probe_exe(
             "emulator",
-            sdk.as_ref().map(|s| s.join("emulator").join("emulator.exe")),
+            sdk.as_ref()
+                .map(|s| s.join("emulator").join("emulator.exe")),
             "Runs an Android emulator for testing",
             "Install Android SDK emulator + a system image",
         ),
@@ -132,18 +134,16 @@ fn probe_java() -> ToolInfo {
 
 fn java_version(exe: &std::path::Path) -> Option<String> {
     // `java -version` prints to stderr.
-    let out = std::process::Command::new(exe).arg("-version").output().ok()?;
+    let out = std::process::Command::new(exe)
+        .arg("-version")
+        .output()
+        .ok()?;
     let mut text = String::from_utf8_lossy(&out.stderr).into_owned();
     text.push_str(&String::from_utf8_lossy(&out.stdout));
     Some(first_line(&text))
 }
 
-fn probe_exe(
-    id: &str,
-    sdk_path: Option<PathBuf>,
-    purpose: &str,
-    fix: &str,
-) -> ToolInfo {
+fn probe_exe(id: &str, sdk_path: Option<PathBuf>, purpose: &str, fix: &str) -> ToolInfo {
     if let Some(p) = sdk_path {
         if p.is_file() {
             let v = run_capture(p.to_str().unwrap_or(""), &["version"])
@@ -161,9 +161,7 @@ fn probe_exe(
     }
     // PATH fallback for adb/apktool/jadx.
     let exe = format!("{id}.exe");
-    if run_capture(&exe, &["version"]).is_some()
-        || run_capture(&exe, &["--version"]).is_some()
-    {
+    if run_capture(&exe, &["version"]).is_some() || run_capture(&exe, &["--version"]).is_some() {
         return ToolInfo {
             id: id.into(),
             found: true,
@@ -199,7 +197,13 @@ fn run_capture(prog: &str, args: &[&str]) -> Option<String> {
 }
 
 fn first_line(s: &str) -> String {
-    s.lines().next().unwrap_or("").trim().chars().take(200).collect()
+    s.lines()
+        .next()
+        .unwrap_or("")
+        .trim()
+        .chars()
+        .take(200)
+        .collect()
 }
 
 fn android_sdk_root() -> Option<PathBuf> {
@@ -226,10 +230,7 @@ fn newest_build_tools(sdk: &Option<PathBuf>) -> Option<PathBuf> {
     for e in std::fs::read_dir(&dir).ok()? {
         let e = e.ok()?;
         let name = e.file_name().to_string_lossy().into_owned();
-        let nums: Vec<u32> = name
-            .split('.')
-            .filter_map(|x| x.parse().ok())
-            .collect();
+        let nums: Vec<u32> = name.split('.').filter_map(|x| x.parse().ok()).collect();
         if !nums.is_empty() && e.path().is_dir() {
             vers.push((nums, e.path()));
         }

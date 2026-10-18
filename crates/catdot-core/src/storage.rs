@@ -114,12 +114,7 @@ fn migrate(conn: &Connection) -> Result<(), AppError> {
 }
 
 /// Minimal project repository used by Phase 0 (full repos land in Phase 1+).
-pub fn create_project(
-    conn: &Connection,
-    id: &str,
-    name: &str,
-    path: &str,
-) -> Result<(), AppError> {
+pub fn create_project(conn: &Connection, id: &str, name: &str, path: &str) -> Result<(), AppError> {
     if id.is_empty() || name.is_empty() || path.is_empty() {
         return Err(AppError::new(
             crate::errors::ErrorCode::InvalidInput,
@@ -135,16 +130,14 @@ pub fn create_project(
 }
 
 pub fn get_project_path(conn: &Connection, id: &str) -> Result<String, AppError> {
-    conn.query_row("SELECT path FROM projects WHERE id=?1", [id], |r| {
-        r.get(0)
-    })
-    .map_err(|_| {
-        AppError::new(
-            crate::errors::ErrorCode::JobNotFound,
-            format!("project `{id}` not found"),
-            "What happened: that project was not found. What to do: reopen the project.",
-        )
-    })
+    conn.query_row("SELECT path FROM projects WHERE id=?1", [id], |r| r.get(0))
+        .map_err(|_| {
+            AppError::new(
+                crate::errors::ErrorCode::JobNotFound,
+                format!("project `{id}` not found"),
+                "What happened: that project was not found. What to do: reopen the project.",
+            )
+        })
 }
 
 /// A persisted setting row (Part D5). `value` is JSON; never contains secrets.
@@ -160,10 +153,7 @@ const MAX_KEY_LEN: usize = 256;
 const MAX_VALUE_BYTES: usize = 64 * 1024;
 
 fn valid_settings_key(key: &str) -> bool {
-    !key.is_empty()
-        && key.len() <= MAX_KEY_LEN
-        && !key.contains('/')
-        && !key.contains('\\')
+    !key.is_empty() && key.len() <= MAX_KEY_LEN && !key.contains('/') && !key.contains('\\')
 }
 
 /// Read one setting value (None if absent).
@@ -271,7 +261,9 @@ mod tests {
     fn migrates_from_empty_and_is_idempotent() {
         let conn = open_memory().expect("open");
         let v: i64 = conn
-            .query_row("SELECT MAX(version) FROM schema_migrations", [], |r| r.get(0))
+            .query_row("SELECT MAX(version) FROM schema_migrations", [], |r| {
+                r.get(0)
+            })
             .expect("version");
         assert_eq!(v, SCHEMA_VERSION);
         // Second open on same connection re-runs migrate without error.
@@ -296,12 +288,25 @@ mod tests {
     fn settings_round_trip_and_list() {
         let conn = open_memory().expect("open");
         assert!(settings_get(&conn, "missing").expect("get").is_none());
-        settings_set(&conn, "ai.provider", &serde_json::json!({"kind":"openai-compatible"}), "global")
-            .expect("set");
+        settings_set(
+            &conn,
+            "ai.provider",
+            &serde_json::json!({"kind":"openai-compatible"}),
+            "global",
+        )
+        .expect("set");
         settings_set(&conn, "general.theme", &serde_json::json!("dark"), "global").expect("set");
         // Overwrite existing.
-        settings_set(&conn, "general.theme", &serde_json::json!("light"), "global").expect("set");
-        let got = settings_get(&conn, "general.theme").expect("get").expect("some");
+        settings_set(
+            &conn,
+            "general.theme",
+            &serde_json::json!("light"),
+            "global",
+        )
+        .expect("set");
+        let got = settings_get(&conn, "general.theme")
+            .expect("get")
+            .expect("some");
         assert_eq!(got, serde_json::json!("light"));
         let all = settings_list(&conn).expect("list");
         assert_eq!(all.len(), 2);
@@ -313,8 +318,7 @@ mod tests {
     fn audit_redacts_secrets_in_detail() {
         let conn = open_memory().expect("open");
         let seeded = serde_json::json!({"key": "AIzaSyFakeKeyForTestOnly1234567890ab"});
-        audit_insert(&conn, "user", "settings.set", "ai.provider", Some(&seeded))
-            .expect("audit");
+        audit_insert(&conn, "user", "settings.set", "ai.provider", Some(&seeded)).expect("audit");
         let stored: String = conn
             .query_row("SELECT detail_json FROM audit_events", [], |r| r.get(0))
             .expect("row");
