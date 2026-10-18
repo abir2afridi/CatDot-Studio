@@ -3,6 +3,7 @@
 
 pub mod ai;
 pub mod apk_types;
+pub mod branding;
 pub mod diagnostics;
 pub mod errors;
 pub mod jobs;

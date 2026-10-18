@@ -118,10 +118,16 @@ export const en = {
   panel: {
     logs: "Logs",
     build: "Build",
+    diff: "Diff",
     problems: "Problems",
     noBuildYet: "No build yet — use Build · align · sign in the APK Explorer.",
     problemsPlanned: "The problem list arrives with deeper APK analysis (Phase 4).",
     logCount: "{{count}} lines",
+  },
+  diff: {
+    noDraft: "Edit a file to preview a before/after diff here.",
+    reviewing: "Reviewing diff: {{name}}",
+    unavailable: "Diff unavailable for this entry.",
   },
   cmd: {
     goExplorer: "Go to Explorer",
@@ -136,6 +142,7 @@ export const en = {
     revertAll: "Revert all edits",
     saveTab: "Save active tab",
     closeTab: "Close active tab",
+    goDiff: "Show pending-edit diff",
     nothingToSave: "Nothing to save",
     nothingToClose: "No tab open",
   },
@@ -259,11 +266,17 @@ export const bn: typeof en = {
   },
   panel: {
     logs: "লগ",
+    diff: "তুলনা",
     build: "বিল্ড",
     problems: "সমস্যা",
     noBuildYet: "এখনও বিল্ড হয়নি — এপিকে এক্সপ্লোরারে Build · align · sign ব্যবহার করুন।",
     problemsPlanned: "সমস্যা তালিকা আসবে গভীর এপিকে বিশ্লেষণের সাথে (ধাপ ৪)।",
     logCount: "{{count}} লাইন",
+  },
+  diff: {
+    noDraft: "একটি ফাইল সম্পাদনা করলে এখানে আগে/পরের তুলনা দেখা যাবে।",
+    reviewing: "তুলনা দেখা হচ্ছে: {{name}}",
+    unavailable: "এই ফাইলের তুলনা দেখানো সম্ভব নয়।",
   },
   cmd: {
     goExplorer: "এক্সপ্লোরারে যান",
@@ -278,6 +291,7 @@ export const bn: typeof en = {
     revertAll: "সব সম্পাদনা বাতিল করুন",
     saveTab: "সক্রিয় ট্যাব সংরক্ষণ করুন",
     closeTab: "সক্রিয় ট্যাব বন্ধ করুন",
+    goDiff: "অপেক্ষমাণ সম্পাদনার তুলনা দেখুন",
     nothingToSave: "সংরক্ষণের কিছু নেই",
     nothingToClose: "কোনো ট্যাব খোলা নেই",
   },

@@ -62,7 +62,7 @@ pub fn run() {
                 logs,
             });
             app.manage(apk_commands::ApkState::default());
-            tracing::info!(target: "app", "CatDot Studio shell started");
+            tracing::info!(target: "app", "{} shell started", catdot_core::branding::APP_NAME);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

@@ -7,17 +7,20 @@ import { logsClear, logsRecent, onLogEntry, IpcError } from "../lib/ipc";
 import type { LogEntry } from "@catdot/shared-types";
 import { useUi, type BottomTab } from "../state/ui";
 import { PlannedBadge } from "./PlannedBadge";
+import { DiffTab } from "./DiffTab";
 
 export function BottomPanel() {
   const { t } = useTranslation();
   const height = useUi((s) => s.bottomHeight);
   const activeTab = useUi((s) => s.activeBottomTab);
   const setActiveTab = useUi((s) => s.setActiveBottomTab);
+  const activeFile = useUi((s) => s.activeFile);
+  const draft = useUi((s) => (activeFile == null ? null : s.drafts[activeFile]));
   const lastBuild = useUi((s) => s.lastBuild);
-
   const tabs: ReadonlyArray<{ id: BottomTab; label: string; enabled: boolean }> = [
     { id: "logs", label: t("panel.logs"), enabled: true },
     { id: "build", label: t("panel.build"), enabled: true },
+    { id: "diff", label: t("panel.diff"), enabled: draft != null },
     { id: "problems", label: t("panel.problems"), enabled: false },
   ];
 
@@ -57,6 +60,12 @@ export function BottomPanel() {
             <Empty text={t("panel.noBuildYet")} />
           ) : (
             <BuildFeed />
+          )
+        ) : activeTab === "diff" ? (
+          draft == null ? (
+            <Empty text={t("diff.noDraft")} />
+          ) : (
+            <DiffTab />
           )
         ) : (
           <Empty text={t("panel.problemsPlanned")} />

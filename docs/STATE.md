@@ -34,12 +34,19 @@
   plaintext/smali. Same drafts + save-request flow as before; caret still
   drives the status bar. Installer (NSIS) 2.95 → 3.83
   MiB, MSI 4.10 → 4.97 MiB. *(sha256 updated below)*
+- **Diff tab + branding module landed 2026-10-18**: bottom-panel Diff tab is
+  a real side-by-side Monaco review (committed content vs in-memory draft;
+  tab disabled without a draft; palette command "Show pending-edit diff");
+  `monacoEditor` diff feature registered. Branding single source (Part E9):
+  `catdot-core/src/branding.rs` + `apps/desktop/src/lib/branding.ts` with
+  rebrand guard tests on both sides (73 cargo / 12 JS tests); Settings
+  footer shows identity + repo link.
 - Open risks: apk-reverse 404 still unresolved (REFERENCE_ANALYSIS.md), Java 25
   vs JDK 17 pin (works today), i18next peer-dep warning.
-- Build state: **installers rebuilt 2026-10-18 with the X1 IDE shell + Monaco
-  editor**: `…/bundle/msi/CatDot Studio_0.1.0_x64_en-US.msi` (4.97 MiB,
-  sha256 bc99a3…95bd7) and `…/bundle/nsis/CatDot Studio_0.1.0_x64-setup.exe`
-  (3.83 MiB, sha256 5fc3f0…bdb3c). Release exe smoke-tested (launch 5 s
+- Build state: **installers rebuilt 2026-10-18 (X1 shell + Monaco + Diff tab +
+  branding)**: `…/bundle/msi/CatDot Studio_0.1.0_x64_en-US.msi` (4.97 MiB,
+  sha256 0ca48f…5fc8) and `…/bundle/nsis/CatDot Studio_0.1.0_x64-setup.exe`
+  (3.83 MiB, sha256 6f6a01…5f29). Release exe smoke-tested (launch 5 s
   alive, then force-killed).
 - Import UX (2026-10-18, same day, ADR-0012): added a **native APK file-picker**
   ("Open APK…" in Explorer + Dashboard) via `tauri-plugin-dialog` with only

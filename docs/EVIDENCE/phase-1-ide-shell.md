@@ -39,8 +39,23 @@ Session: 2026-10-18 (VS Code-style IDE shell work unit)
 - Problems tab intentionally disabled-planned (needs deeper APK analysis, Phase 4).
 - Layout persistence rides the existing settings IPC; no new Rust code.
 
+## Diff tab + branding follow-ups (same session)
+- `components/DiffTab.tsx`: Monaco `DiffEditor` side-by-side review of the
+  active file (committed workspace content vs in-memory draft). Bottom tab
+  enabled only while a draft exists; palette command `view.diff` added
+  (`cmd.goDiff`, EN+BN). Monaco gained the `diffEditor` feature registration.
+- Branding single-source (Part E9): `crates/catdot-core/src/branding.rs`
+  (APP_NAME/APP_TAGLINE/REPO_URL + rebrand guard test via
+  `branding::rebrand_guard`) and `apps/desktop/src/lib/branding.ts`
+  (+ `branding.test.ts` guard). Settings page footer shows APP_NAME,
+  app version, tagline and repo link. Tauri shell start log uses
+  `catdot_core::branding::APP_NAME`.
+- Gates after follow-ups: `cargo test -p catdot-core` → **73 passed**,
+  clippy -D warnings PASS, fmt PASS, `pnpm typecheck` PASS, `pnpm lint` PASS,
+  `pnpm test` → 12 passed (2 branding + 10 prior), `pnpm audit:reality` PASS.
+
 ## Installer
-- Final rebuild of the session (IDE shell + Monaco editor):
-  - `apps/desktop/src-tauri/target/release/bundle/msi/CatDot Studio_0.1.0_x64_en-US.msi` — 4.97 MiB, sha256 `bc99a362511646c19206c8e8cf8f93764594352c65e7ba5fc562353e1a595bd7`
-  - `apps/desktop/src-tauri/target/release/bundle/nsis/CatDot Studio_0.1.0_x64-setup.exe` — 3.83 MiB, sha256 `5fc3f0aeddf3711c0870e01bbdbf7685e6726c1b5272b02dd8979b8a9efbdb3c`
-- Release exe smoke test: launched 5 s alive (pid 15800), then force-killed.
+- Final rebuild of the session (IDE shell + Monaco + Diff tab + branding):
+  - `apps/desktop/src-tauri/target/release/bundle/msi/CatDot Studio_0.1.0_x64_en-US.msi` — 4.97 MiB, sha256 `0ca48fd633cc992e7c75f371168ef8c9850e06a0886631740e2ff32fde905fc8`
+  - `apps/desktop/src-tauri/target/release/bundle/nsis/CatDot Studio_0.1.0_x64-setup.exe` — 3.83 MiB, sha256 `6f6a019ae7fd10ab97ce935e725b4b30d8d0f8f884f73bfcb3af0afa538d5f29`
+- Release exe smoke test: launched 5 s alive (pid 1552), then force-killed.

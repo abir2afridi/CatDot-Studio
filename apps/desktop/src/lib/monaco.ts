@@ -13,6 +13,7 @@ import "monaco-editor/features/codeEditor/register";
 import "monaco-editor/features/comment/register";
 import "monaco-editor/features/contextmenu/register";
 import "monaco-editor/features/cursorUndo/register";
+import "monaco-editor/features/diffEditor/register";
 import "monaco-editor/features/find/register";
 import "monaco-editor/features/folding/register";
 import "monaco-editor/features/fontZoom/register";

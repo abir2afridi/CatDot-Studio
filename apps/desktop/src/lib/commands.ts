@@ -120,6 +120,15 @@ export function useCommands(): PaletteCommand[] {
           { id: "view.settings", titleKey: "cmd.goSettings", run: () => setPage("settings") },
           { id: "view.toggleSidebar", titleKey: "cmd.toggleSidebar", hay: "ctrl+b", run: () => toggleExplorer() },
           { id: "view.togglePanel", titleKey: "cmd.togglePanel", hay: "ctrl+j", run: () => toggleBottom() },
+          {
+            id: "view.diff",
+            titleKey: "cmd.goDiff",
+            run: () => {
+              const ui = useUi.getState();
+              ui.setActiveBottomTab("diff");
+              if (!ui.bottomOpen) toggleBottom();
+            },
+          },
           { id: "apk.import", titleKey: "cmd.importApk", run: () => pickAndImport() },
           { id: "apk.export", titleKey: "cmd.exportApk", run: () => exportMut.mutate() },
           { id: "apk.build", titleKey: "cmd.buildSign", run: () => buildMut.mutate() },
