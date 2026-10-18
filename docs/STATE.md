@@ -27,13 +27,20 @@
   2. Runtime UI drive (Playwright/Webdriver or guided `tauri dev` walk) to
      verify palette/shortcuts/resize live — compile/typecheck-verified only.
   3. adb install flow (device permitting) + branding config module.
+- **Monaco editor (ADR-0014) landed 2026-10-18**: the entry editor now runs
+  the real Monaco engine (self-hosted, offline, slim bundle: editor feature
+  set + XML tokenizer + editor worker only; no json/html/css/ts workers).
+  Find/replace, multi-cursor, hover, folding work on XML resources and
+  plaintext/smali. Same drafts + save-request flow as before; caret still
+  drives the status bar. Installer (NSIS) 2.95 → 3.83
+  MiB, MSI 4.10 → 4.97 MiB. *(sha256 updated below)*
 - Open risks: apk-reverse 404 still unresolved (REFERENCE_ANALYSIS.md), Java 25
   vs JDK 17 pin (works today), i18next peer-dep warning.
-- Build state: **installers rebuilt 2026-10-18 with the X1 IDE shell**:
-  `apps/desktop/src-tauri/target/release/bundle/msi/CatDot Studio_0.1.0_x64_en-US.msi`
-  (4.10 MiB, sha256 0a80…6ead) and `…/nsis/CatDot Studio_0.1.0_x64-setup.exe`
-  (2.95 MiB, sha256 9148…76b8). Release exe smoke-tested (launch 5 s alive,
-  then force-killed).
+- Build state: **installers rebuilt 2026-10-18 with the X1 IDE shell + Monaco
+  editor**: `…/bundle/msi/CatDot Studio_0.1.0_x64_en-US.msi` (4.97 MiB,
+  sha256 bc99a3…95bd7) and `…/bundle/nsis/CatDot Studio_0.1.0_x64-setup.exe`
+  (3.83 MiB, sha256 5fc3f0…bdb3c). Release exe smoke-tested (launch 5 s
+  alive, then force-killed).
 - Import UX (2026-10-18, same day, ADR-0012): added a **native APK file-picker**
   ("Open APK…" in Explorer + Dashboard) via `tauri-plugin-dialog` with only
   `dialog:allow-open` granted — previously import required drag-drop or typing

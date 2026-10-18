@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { apkOpenEntry, apkRevertEntry, apkSaveEntry } from "../lib/apk";
 import { IpcError } from "../lib/ipc";
 import { useUi } from "../state/ui";
+import { MonacoEntry } from "./MonacoEntry";
 
 export function EditorArea() {
   const openFiles = useUi((s) => s.openFiles);
@@ -93,9 +94,7 @@ function EntryEditor({ entryPath }: { entryPath: string }) {
   const queryClient = useQueryClient();
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const draft = useUi((s) => (s.drafts[entryPath] ?? null));
-  const setDraft = useUi((s) => s.setDraft);
   const clearDraft = useUi((s) => s.clearDraft);
-  const setCursor = useUi((s) => s.setCursor);
   const saveRequest = useUi((s) => s.saveRequest);
 
   const entry = useQuery({
@@ -166,17 +165,7 @@ function EntryEditor({ entryPath }: { entryPath: string }) {
         {patched && <span className="text-warning">● {t("editor.patched")}</span>}
         <span className="ml-auto">{entry.data.size} B</span>
       </div>
-      <textarea
-        value={shownDraft}
-        onChange={(e) => {
-          setDraft(entryPath, e.target.value);
-          trackCursor(e.target, setCursor);
-        }}
-        onSelect={(e) => trackCursor(e.currentTarget, setCursor)}
-        spellCheck={false}
-        aria-label={`${entryPath} (${t("editor.unsaved")}: ${dirty ? "yes" : "no"})`}
-        className="min-h-0 grow resize-none bg-bg p-3 font-mono text-[13px] leading-5 focus:outline-none"
-      />
+      <MonacoEntry entryPath={entryPath} content={entry.data.content} />
       <div className="flex items-center gap-2 border-t border-border bg-surface px-3 py-1.5 text-xs">
         <button
           type="button"
@@ -220,17 +209,6 @@ function Breadcrumbs({ path }: { path: string }) {
       ))}
     </nav>
   );
-}
-
-/** Track caret position for the status bar. */
-function trackCursor(
-  el: HTMLTextAreaElement,
-  setCursor: (line: number, col: number) => void,
-) {
-  const from = el.selectionStart ?? 0;
-  const upto = el.value.slice(0, from);
-  const lines = upto.split("\n");
-  setCursor(lines.length, (lines[lines.length - 1]?.length ?? 0) + 1);
 }
 
 function leafName(path: string): string {

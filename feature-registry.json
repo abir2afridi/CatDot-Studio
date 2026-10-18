@@ -151,10 +151,10 @@
     },
     {
       "id": "manual-edits",
-      "title": "Manual text-entry edits with persisted patch file (F4, text entries)",
+      "title": "Manual text-entry edits with persisted patch file (F4, text entries) in a real Monaco editor",
       "phase": 2,
       "status": "real",
-      "evidence": ["cargo test -p catdot-core workspace::read_entry", "apps/desktop EditorArea ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ apk_save_entry/apk_revert_entry + patches.json"]
+      "evidence": ["cargo test -p catdot-core workspace::read_entry", "apps/desktop MonacoEntry to apk_save_entry/apk_revert_entry + patches.json"]
     },
     {
       "id": "build-sign-verify",
