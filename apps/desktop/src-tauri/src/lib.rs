@@ -5,6 +5,7 @@
 mod apk_commands;
 mod commands;
 mod logs;
+mod term_commands;
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, atomic::AtomicBool};
@@ -63,10 +64,17 @@ pub fn run() {
                 logs,
             });
             app.manage(apk_commands::ApkState::default());
+            app.manage(term_commands::TermState(
+                std::sync::Mutex::new(std::collections::HashMap::new()),
+            ));
             tracing::info!(target: "app", "{} shell started", catdot_core::branding::APP_NAME);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            term_commands::term_spawn,
+            term_commands::term_write,
+            term_commands::term_resize,
+            term_commands::term_close,
             commands::settings_get,
             commands::settings_set,
             commands::settings_list,

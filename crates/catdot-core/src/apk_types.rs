@@ -40,6 +40,15 @@ pub struct ApkStatus {
     pub workspace_dir: String,
 }
 
+/// One integrated-terminal tab (real ConPTY child; desktop shell).
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export)]
+pub struct TermInfo {
+    pub id: u32,
+    /// resolved shell: pwsh | powershell | cmd
+    pub shell: String,
+}
+
 /// One saved workspace state (Part F4 change history, not Git).
 #[derive(Debug, Clone, Serialize, TS)]
 #[ts(export)]

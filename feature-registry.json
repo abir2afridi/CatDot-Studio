@@ -250,6 +250,17 @@
       "phase": 5,
       "status": "disabled-planned",
       "evidence": []
+    },
+    {
+      "id": "integrated-terminal",
+      "title": "Integrated terminal: real ConPTY shells with VS-Code-style tabs (+ / × / minimize)",
+      "phase": 4,
+      "status": "real",
+      "evidence": [
+        "apps/desktop term_commands.rs: portable-pty ConPTY spawn (pwsh→powershell→cmd fallback), term-out/term-exit events, term_write/term_resize/term_close IPC",
+        "apps/desktop TerminalPanel.tsx: xterm.js sessions, new-terminal (+), per-tab close (×), tab switching, resize observer fit",
+        "cargo check desktop clean; pnpm typecheck/lint/test green this session"
+      ]
     }
   ]
 }

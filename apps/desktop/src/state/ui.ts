@@ -4,7 +4,7 @@
 import { create } from "zustand";
 
 export type Page = "guided" | "explorer" | "ai" | "devices" | "system" | "settings";
-export type BottomTab = "logs" | "build" | "diff" | "device" | "manifest" | "problems";
+export type BottomTab = "terminal" | "logs" | "build" | "diff" | "device" | "manifest" | "problems";
 import type { BuildReport } from "@catdot/shared-types";
 
 export interface PaletteCommand {
@@ -91,7 +91,7 @@ export const useUi = create<UiState>((set) => ({
   bottomOpen: false,
   explorerWidth: clamp(288, EXPLORER_WIDTH.min, EXPLORER_WIDTH.max),
   bottomHeight: clamp(220, BOTTOM_HEIGHT.min, BOTTOM_HEIGHT.max),
-  activeBottomTab: "logs",
+  activeBottomTab: "terminal",
   cursorLine: 1,
   cursorCol: 1,
   lastBuild: null,

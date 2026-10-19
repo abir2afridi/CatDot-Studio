@@ -102,6 +102,14 @@
   versions, SDK, permissions and components. `cargo test -p catdot-core` =
   **104 tests**; registry **34 features** (`decode-apk-tools`,
   `manifest-analyzer`→real, `guided-edit-flow`→real).
+- **Integrated terminal landed 2026-10-19 (later same day)**: VS-Code-style
+  terminal row in the bottom panel — a real **ConPTY shell** per tab
+  (portable-pty; pwsh → powershell → cmd fallback), streamed via
+  `term-out`/`term-exit` events into xterm.js; keystrokes flow back through
+  `term_write`, resize tracks the panel via FitAddon, `×` kills the child,
+  `＋` spawns another, and a header `⌄` minimizes the panel. Terminal is now
+  the first bottom tab (default) next to Logs. Registry **35 features**
+  (`integrated-terminal` → real). Cargo check + all JS gates green.
 - Open risks: apk-reverse 404 still unresolved (REFERENCE_ANALYSIS.md), Java 25
   vs JDK 17 pin (works today), i18next peer-dep warning.
 - Build state: **installers rebuilt 2026-10-18 (Device Explorer follow-up; previous

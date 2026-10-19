@@ -10,16 +10,19 @@ import { PlannedBadge } from "./PlannedBadge";
 import { DiffTab } from "./DiffTab";
 import { DeviceLogsTab } from "./DeviceLogsTab";
 import { ManifestTab } from "./ManifestTab";
+import { TerminalPanel } from "./TerminalPanel";
 
 export function BottomPanel() {
   const { t } = useTranslation();
   const height = useUi((s) => s.bottomHeight);
   const activeTab = useUi((s) => s.activeBottomTab);
   const setActiveTab = useUi((s) => s.setActiveBottomTab);
+  const toggleBottom = useUi((s) => s.toggleBottom);
   const activeFile = useUi((s) => s.activeFile);
   const draft = useUi((s) => (activeFile == null ? null : s.drafts[activeFile]));
   const lastBuild = useUi((s) => s.lastBuild);
   const tabs: ReadonlyArray<{ id: BottomTab; label: string; enabled: boolean }> = [
+    { id: "terminal", label: t("panel.terminal"), enabled: true },
     { id: "logs", label: t("panel.logs"), enabled: true },
     { id: "build", label: t("panel.build"), enabled: true },
     { id: "diff", label: t("panel.diff"), enabled: draft != null },
@@ -55,9 +58,20 @@ export function BottomPanel() {
             {tab.id === "problems" && <PlannedBadge phase={4} />}
           </button>
         ))}
+        <button
+          type="button"
+          onClick={toggleBottom}
+          aria-label={t("cmd.togglePanel")}
+          title={t("cmd.togglePanel")}
+          className="ml-auto rounded px-1.5 py-0.5 text-text-dim hover:bg-surface-2 hover:text-text"
+        >
+          ⌄
+        </button>
       </div>
       <div className="min-h-0 flex-1 overflow-hidden">
-        {activeTab === "logs" ? (
+        {activeTab === "terminal" ? (
+          <TerminalPanel />
+        ) : activeTab === "logs" ? (
           <LogsFeed />
         ) : activeTab === "build" ? (
           lastBuild == null ? (

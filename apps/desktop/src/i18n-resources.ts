@@ -144,6 +144,7 @@ export const en = {
     openStatusBar: "Commands",
   },
   panel: {
+    terminal: "Terminal",
     logs: "Logs",
     build: "Build",
     diff: "Diff",
@@ -234,6 +235,12 @@ export const en = {
     done: "Done",
     current: "Current step",
     todo: "Upcoming",
+  },
+  terminal: {
+    welcome: "Integrated terminal — a real shell (pwsh/powershell). Type 'help'.",
+    new: "New terminal (+)",
+    close: "Close terminal (×)",
+    empty: "No terminal open — press + to start one.",
   },
   recipes: {
     hint: "Edits are recorded as reversible patches — see Change history.",
@@ -423,6 +430,7 @@ export const bn: typeof en = {
     openStatusBar: "কমান্ড",
   },
   panel: {
+    terminal: "টার্মিনাল",
     logs: "লগ",
     diff: "ডিফ",
     device: "ডিভাইস",
@@ -513,6 +521,12 @@ export const bn: typeof en = {
     done: "সম্পন্ন",
     current: "বর্তমান ধাপ",
     todo: "পরে",
+  },
+  terminal: {
+    welcome: "ইন্টিগ্রেটেড টার্মিনাল — আসল শেল (pwsh/powershell)। 'help' লিখুন।",
+    new: "নতুন টার্মিনাল (+)",
+    close: "টার্মিনাল বন্ধ (×)",
+    empty: "কোনো টার্মিনাল খোলা নেই — চালু করতে + চাপুন।",
   },
   recipes: {
     hint: "সম্পাদনা বিপরীতযোগ্য প্যাচ হিসেবে জমা হয় — Change history দেখুন।",

@@ -30,6 +30,7 @@ export type { ProviderCapabilities } from "./generated/ProviderCapabilities";
 export type { RiskTier } from "./generated/RiskTier";
 export type { Setting } from "./generated/Setting";
 export type { SignStep } from "./generated/SignStep";
+export type { TermInfo } from "./generated/TermInfo";
 export type { ToolInfo } from "./generated/ToolInfo";
 export type { ToolchainReport } from "./generated/ToolchainReport";
 export type { JsonValue } from "./generated/serde_json/JsonValue";

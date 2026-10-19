@@ -8,6 +8,7 @@ import type {
   LogEntry,
   ProviderCapabilities,
   Setting,
+  TermInfo,
   ToolchainReport,
 } from "@catdot/shared-types";
 
@@ -96,4 +97,23 @@ export const logsClear = () => call<void>("logs_clear");
 
 export function onLogEntry(cb: (entry: LogEntry) => void): Promise<UnlistenFn> {
   return listen<LogEntry>("log://entry", (payload) => cb(payload.payload));
+}
+
+// ---------- Integrated terminals (real ConPTY; part X-Term) ----------
+export const termSpawn = () => call<TermInfo>("term_spawn");
+
+export const termWrite = (id: number, data: string) =>
+  call<void>("term_write", { id, data });
+
+export const termResize = (id: number, cols: number, rows: number) =>
+  call<void>("term_resize", { id, cols, rows });
+
+export const termClose = (id: number) => call<void>("term_close", { id });
+
+export function onTermOut(cb: (id: number, data: string) => void): Promise<UnlistenFn> {
+  return listen<{ id: number; data: string }>("term-out", (p) => cb(p.payload.id, p.payload.data));
+}
+
+export function onTermExit(cb: (id: number) => void): Promise<UnlistenFn> {
+  return listen<number>("term-exit", (p) => cb(p.payload));
 }
