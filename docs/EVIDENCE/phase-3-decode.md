@@ -31,3 +31,9 @@
 - `CATDOT_APKTOOL_JAR` points decode at any local apktool jar; default path
   is `toolchain/downloads/apktool.jar`. Tests skip with an honest
   `UNVERIFIED-ENV` marker when the jar or aapt2 is missing.
+
+## Installers (post-decode-pipeline, 2026-10-19)
+
+- Launch smoke: release exe started, alive after 5 s, force-killed (pid 21080).
+- MSI 5.13 MiB, sha256 FA0273E5D9E124030540ADE3122A8862BDA8BB07394D8BB4D837C4F5C381D73D
+- NSIS 3.94 MiB, sha256 BB951E06E59D4CACB655627BCDF9C00B773EC544C3D63B360669C806E14DCD7B
