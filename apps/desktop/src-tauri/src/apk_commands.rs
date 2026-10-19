@@ -529,11 +529,12 @@ pub fn device_list() -> Result<Vec<device_tools::DeviceInfo>, AppError> {
     device_tools::list_devices()
 }
 
-/// Install the workspace signed APK on the first ready device.
+/// Install the workspace signed APK on the chosen device (or first ready).
 #[tauri::command]
 pub fn device_install_signed(
     app: AppHandle,
     apk_state: State<'_, ApkState>,
+    serial: Option<String>,
 ) -> Result<String, AppError> {
     require_allow(AccessLevel::L3EditWithApproval, RiskTier::Device)?;
     let g = apk_lock(&apk_state)?;
@@ -542,13 +543,13 @@ pub fn device_install_signed(
         None => workspace_root(&app)?,
     };
     let signed = ws.join("signed.apk");
-    device_tools::install_apk(&signed)
+    device_tools::install_apk(&signed, serial.as_deref())
 }
 
-/// Bounded recent device log (`adb logcat -d -t N`).
+/// Bounded recent device log from the chosen device (or the first ready one).
 #[tauri::command]
-pub fn device_logcat(lines: Option<u32>) -> Result<String, AppError> {
-    device_tools::logcat_dump(lines.unwrap_or(300))
+pub fn device_logcat(lines: Option<u32>, serial: Option<String>) -> Result<String, AppError> {
+    device_tools::logcat_dump(lines.unwrap_or(300), serial.as_deref())
 }
 
 #[tauri::command]
