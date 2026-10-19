@@ -100,6 +100,34 @@
       "evidence": ["pnpm typecheck", "pnpm lint", "pnpm test (i18n parity EN/BN)", "pnpm tauri build"]
     },
     {
+      "id": "checkpoints",
+      "title": "Checkpoints / change history (patch snapshots, auto before build, restore + delete)",
+      "phase": 3,
+      "status": "real",
+      "evidence": ["pnpm typecheck", "pnpm lint", "pnpm tauri build", "docs/EVIDENCE/phase-3-checkpoints-device.md"]
+    },
+    {
+      "id": "patch-manager-ui",
+      "title": "Patch manager (pending-edit list with per-file open + revert)",
+      "phase": 3,
+      "status": "real",
+      "evidence": ["pnpm typecheck", "pnpm lint", "docs/EVIDENCE/phase-3-checkpoints-device.md"]
+    },
+    {
+      "id": "device-install",
+      "title": "Device install (adb install -r of the signed APK; honest no-device errors)",
+      "phase": 4,
+      "status": "real",
+      "evidence": ["cargo test -p catdot-core tools::device_tools", "docs/EVIDENCE/phase-3-checkpoints-device.md"]
+    },
+    {
+      "id": "device-logs",
+      "title": "Device logs tab (bounded adb logcat -d dump, manual refresh)",
+      "phase": 4,
+      "status": "real",
+      "evidence": ["cargo test -p catdot-core tools::device_tools", "docs/EVIDENCE/phase-3-checkpoints-device.md"]
+    },
+    {
       "id": "settings-persistence",
       "title": "Settings persistence (SQLite, real IPC)",
       "phase": 0,

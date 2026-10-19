@@ -62,13 +62,27 @@
   `workspace_dir`. Palette: guided, reveal-original, reveal-signed commands
   (disabled with honest reasons when absent). New features:
   `h2-project-map-cards`, `guided-mode-shell` (registry 28 features).
+- **Phase 3/4 slice landed 2026-10-18 (later same day)**: **Checkpoints /
+  change history** (real JSON snapshots in `workspace/checkpoints/`, auto
+  before every build unless byte-equal, restore/delete, stale-base guard,
+  path-safe digit ids) + **patch manager UI** (pending edits list with open +
+  per-file revert) in the Explorer "Change History" section; **device
+  install** (`adb install -r` of the signed APK with structured
+  `INSTALL_FAILED_*` mapping) and **Device logs tab** (bounded `adb logcat -d`,
+  manual refresh, honest no-device errors). Project Map + Guided Mode step 6
+  install buttons are now real. New core module
+  `tools::device_tools` (+parser unit tests, 77 core tests total). Registry:
+  32 features (`checkpoints`, `patch-manager-ui`, `device-install`,
+  `device-logs`). Evidence: `docs/EVIDENCE/phase-3-checkpoints-device.md`.
+  Physical-device end-to-end run remains `UNVERIFIED-ENV` (no attached
+  device in this environment) — by design honest.
 - Open risks: apk-reverse 404 still unresolved (REFERENCE_ANALYSIS.md), Java 25
   vs JDK 17 pin (works today), i18next peer-dep warning.
-- Build state: **installers rebuilt 2026-10-18 (post-H2 cards + Guided Mode)**:
-  `…/bundle/msi/CatDot Studio_0.1.0_x64_en-US.msi` (5.02 MiB,
-  sha256 ae6a34…a22a) and `…/bundle/nsis/CatDot Studio_0.1.0_x64-setup.exe`
-  (3.87 MiB, sha256 f50f70…35e1). Release exe smoke-tested (launch 5 s
-  alive, then force-killed; pid 10256).
+- Build state: **installers rebuilt 2026-10-18 (checkpoints + device slice)**:
+  `…/bundle/msi/CatDot Studio_0.1.0_x64_en-US.msi` (5.06 MiB,
+  sha256 3181a6…456f51) and `…/bundle/nsis/CatDot Studio_0.1.0_x64-setup.exe`
+  (3.89 MiB, sha256 bc0a5a…849aa2). Release exe smoke-tested (launch 5 s
+  alive, then force-killed; pid 5908).
 - Import UX (2026-10-18, same day, ADR-0012): added a **native APK file-picker**
   ("Open APK…" in Explorer + Dashboard) via `tauri-plugin-dialog` with only
   `dialog:allow-open` granted — previously import required drag-drop or typing

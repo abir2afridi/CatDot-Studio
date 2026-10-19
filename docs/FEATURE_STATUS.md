@@ -18,6 +18,10 @@ Generated from `feature-registry.json` by `pnpm audit:reality`. Do not hand-edit
 | ide-shell-x1 | IDE shell (X1): command palette, bottom Logs/Build panel, resizable layout persisted to settings DB | 1 | real | pnpm test (commands-filter, i18n parity); pnpm typecheck; pnpm lint; cargo test -p catdot-core (settings persistence); pnpm tauri build |
 | h2-project-map-cards | H2 Project Map strip + Original APK / Build outputs cards with reveal-in-folder | 1 | real | pnpm typecheck; pnpm lint; pnpm test (i18n parity EN/BN); pnpm tauri build; docs/EVIDENCE/phase-1-ide-shell.md |
 | guided-mode-shell | Guided Mode shell (activity-bar entry, real-state task list, honest planned badges) | 1 | real | pnpm typecheck; pnpm lint; pnpm test (i18n parity EN/BN); pnpm tauri build |
+| checkpoints | Checkpoints / change history (patch snapshots, auto before build, restore + delete) | 3 | real | pnpm typecheck; pnpm lint; pnpm tauri build; docs/EVIDENCE/phase-3-checkpoints-device.md |
+| patch-manager-ui | Patch manager (pending-edit list with per-file open + revert) | 3 | real | pnpm typecheck; pnpm lint; docs/EVIDENCE/phase-3-checkpoints-device.md |
+| device-install | Device install (adb install -r of the signed APK; honest no-device errors) | 4 | real | cargo test -p catdot-core tools::device_tools; docs/EVIDENCE/phase-3-checkpoints-device.md |
+| device-logs | Device logs tab (bounded adb logcat -d dump, manual refresh) | 4 | real | cargo test -p catdot-core tools::device_tools; docs/EVIDENCE/phase-3-checkpoints-device.md |
 | settings-persistence | Settings persistence (SQLite, real IPC) | 0 | real | cargo test -p catdot-core storage::settings; apps/desktop Settings page |
 | system-check-ui | System check UI (real toolchain detect) | 0 | real | apps/desktop SystemCheck page ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ toolchain_detect IPC |
 | system-logs | System Logs panel (real error capture + copy) | 0 | real | cargo test -p catdot-core logs; apps/desktop Dashboard ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ logs_recent / log://entry |
