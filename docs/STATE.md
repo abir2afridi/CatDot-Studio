@@ -76,13 +76,21 @@
   `device-logs`). Evidence: `docs/EVIDENCE/phase-3-checkpoints-device.md`.
   Physical-device end-to-end run remains `UNVERIFIED-ENV` (no attached
   device in this environment) — by design honest.
+- **Device Explorer page landed 2026-10-18 (follow-up in same slice)**:
+  activity-bar **Devices** page with live `adb devices -l` list (auto +
+  manual refresh), per-device state chips, explicit target selection stored
+  in UI state (`deviceSerial`) that drives Project Map / Guided Mode /
+  palette installs and the Device logs tab; core gained a pure, unit-tested
+  `pick_device` (ready-first, typed honest errors). `cargo test -p catdot-core`
+  now **79 tests**; registry **33 features** (`device-explorer`).
 - Open risks: apk-reverse 404 still unresolved (REFERENCE_ANALYSIS.md), Java 25
   vs JDK 17 pin (works today), i18next peer-dep warning.
-- Build state: **installers rebuilt 2026-10-18 (checkpoints + device slice)**:
+- Build state: **installers rebuilt 2026-10-18 (Device Explorer follow-up; previous
+  build hashes kept in the evidence file)**:
   `…/bundle/msi/CatDot Studio_0.1.0_x64_en-US.msi` (5.06 MiB,
-  sha256 3181a6…456f51) and `…/bundle/nsis/CatDot Studio_0.1.0_x64-setup.exe`
-  (3.89 MiB, sha256 bc0a5a…849aa2). Release exe smoke-tested (launch 5 s
-  alive, then force-killed; pid 5908).
+  sha256 7cfbe7…82003) and `…/bundle/nsis/CatDot Studio_0.1.0_x64-setup.exe`
+  (3.89 MiB, sha256 25942f…55a21e). Release exe smoke-tested (launch 5 s
+  alive, then force-killed; pid 1464).
 - Import UX (2026-10-18, same day, ADR-0012): added a **native APK file-picker**
   ("Open APK…" in Explorer + Dashboard) via `tauri-plugin-dialog` with only
   `dialog:allow-open` granted — previously import required drag-drop or typing

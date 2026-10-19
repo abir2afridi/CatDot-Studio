@@ -21,6 +21,7 @@ export function ProjectMap() {
   const queryClient = useQueryClient();
   const setLastBuild = useUi((s) => s.setLastBuild);
   const setNotice = useUi((s) => s.setNotice);
+  const deviceSerial = useUi((s) => s.deviceSerial);
   const { stage, pendingEdits, isLoading } = useProjectStage();
   const { pickAndImport, isPending: importing } = useImportApk();
 
@@ -39,7 +40,7 @@ export function ProjectMap() {
   });
 
   const installMut = useMutation({
-    mutationFn: () => deviceInstallSigned(),
+    mutationFn: () => deviceInstallSigned(deviceSerial),
     onSuccess: (serial) => {
       setNotice({ text: t("device.installed", { serial }), ok: true });
       void queryClient.invalidateQueries({ queryKey: ["apk"] });

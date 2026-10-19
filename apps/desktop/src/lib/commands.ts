@@ -54,6 +54,7 @@ export function useCommands(): PaletteCommand[] {
   const closeFile = useUi((s) => s.closeFile);
   const setLastBuild = useUi((s) => s.setLastBuild);
   const setNotice = useUi((s) => s.setNotice);
+  const deviceSerial = useUi((s) => s.deviceSerial);
 
   const invalidateApk = useCallback(
     () => void queryClient.invalidateQueries({ queryKey: ["apk"] }),
@@ -106,7 +107,7 @@ export function useCommands(): PaletteCommand[] {
   const status = useQuery({ queryKey: ["apk", "status"], queryFn: apkStatus, staleTime: 5_000 });
 
   const installMut = useMutation({
-    mutationFn: () => deviceInstallSigned(),
+    mutationFn: () => deviceInstallSigned(deviceSerial),
     onSuccess: (serial) => {
       setNotice({ text: t("device.installed", { serial }), ok: true });
       invalidateApk();
@@ -151,6 +152,7 @@ export function useCommands(): PaletteCommand[] {
           { id: "view.guided", titleKey: "cmd.goGuided", run: () => setPage("guided") },
           { id: "view.explorer", titleKey: "cmd.goExplorer", run: () => setPage("explorer") },
           { id: "view.ai", titleKey: "cmd.goAi", run: () => setPage("ai") },
+          { id: "view.devices", titleKey: "cmd.goDevices", run: () => setPage("devices") },
           { id: "view.system", titleKey: "cmd.goSystem", run: () => setPage("system") },
           { id: "view.settings", titleKey: "cmd.goSettings", run: () => setPage("settings") },
           { id: "view.toggleSidebar", titleKey: "cmd.toggleSidebar", hay: "ctrl+b", run: () => toggleExplorer() },

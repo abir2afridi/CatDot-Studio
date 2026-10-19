@@ -42,6 +42,7 @@ export function GuidedPage() {
   const setLastBuild = useUi((s) => s.setLastBuild);
   const setNotice = useUi((s) => s.setNotice);
   const setPage = useUi((s) => s.setPage);
+  const deviceSerial = useUi((s) => s.deviceSerial);
   const { stage, isLoading, pendingEdits } = useProjectStage();
   const { pickAndImport, isPending: importing } = useImportApk();
 
@@ -60,7 +61,7 @@ export function GuidedPage() {
   });
 
   const installMut = useMutation({
-    mutationFn: () => deviceInstallSigned(),
+    mutationFn: () => deviceInstallSigned(deviceSerial),
     onSuccess: (serial) => {
       setNotice({ text: t("device.installed", { serial }), ok: true });
     },

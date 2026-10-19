@@ -10,6 +10,7 @@ import { SystemCheckPage } from "./pages/SystemCheckPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { AiChatPage } from "./pages/AiChatPage";
 import { GuidedPage } from "./pages/GuidedPage";
+import { DevicesPage } from "./pages/DevicesPage";
 import { useUi } from "./state/ui";
 import { useShortcuts } from "./hooks/useShortcuts";
 import { settingsGet } from "./lib/ipc";
@@ -22,6 +23,8 @@ function MainContent() {
       return <GuidedPage />;
     case "ai":
       return <AiChatPage />;
+    case "devices":
+      return <DevicesPage />;
     case "system":
       return <SystemCheckPage />;
     case "settings":

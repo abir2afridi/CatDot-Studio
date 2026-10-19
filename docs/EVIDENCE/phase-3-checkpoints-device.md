@@ -52,10 +52,15 @@ Session: 2026-10-18 (same-day continuation; honest, executed gates only)
 - Device Explorer panel (full list UI) remains scheduled for later in Phase 4
   — the install flow itself is real today and states its requirements honestly.
 
-## Installer (latest rebuild — checkpoints + device slice)
-- `apps/desktop/src-tauri/target/release/bundle/msi/CatDot Studio_0.1.0_x64_en-US.msi` — 5.06 MiB (5,304,320 bytes), sha256 `3181a6c46ee960edb9ca5f7521cc3e421131573f89d31e9fa23c9690ae456f51`
-- `apps/desktop/src-tauri/target/release/bundle/nsis/CatDot Studio_0.1.0_x64-setup.exe` — 3.89 MiB (4,080,823 bytes), sha256 `bc0a5a77690554d078935677407616f4767c42d9ce34934d7c8d8fedf5849aa2`
-- Release exe smoke test: launched 5 s alive (pid 5908), then force-killed.
+## Installer (latest rebuild, Device Explorer follow-up)
+- MSI: apps/desktop/src-tauri/target/release/bundle/msi/CatDot Studio_0.1.0_x64_en-US.msi
+  - 5,304,320 bytes, sha256 7cfbe7d59d4bd8486390c265c3d7760160977ffa709218acbe5e32004ac82003
+- NSIS: apps/desktop/src-tauri/target/release/bundle/nsis/CatDot Studio_0.1.0_x64-setup.exe
+  - 4,082,736 bytes, sha256 25942f164c1e9c397211ce903fa750b76d9a8bea17d2104b0cd8a62f4955a21e
+- Release exe smoke test: launched, alive after 5 s (pid 1464), then force-killed.
+- Earlier build in this slice (checkpoints + device install/logs):
+  MSI sha256 3181a6c46ee960edb9ca5f7521cc3e421131573f89d31e9fa23c9690ae456f51,
+  NSIS sha256 bc0a5a77690554d078935677407616f4767c42d9ce34934d7c8d8fedf5849aa2.
 
 ## Honest limits (not claimed)
 - No automated device run in this environment (no attached device/emulator):

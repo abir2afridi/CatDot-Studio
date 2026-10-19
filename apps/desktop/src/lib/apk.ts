@@ -51,9 +51,11 @@ export const checkpointDelete = (id: string) =>
   call<number>("apk_checkpoint_delete", { id });
 
 // Part F7 device steps (real adb; honest errors when no device/adb).
+// A serial selects an explicit device; null → first ready device.
 export const deviceList = () => call<DeviceInfo[]>("device_list");
 
-export const deviceInstallSigned = () => call<string>("device_install_signed");
+export const deviceInstallSigned = (serial?: string | null) =>
+  call<string>("device_install_signed", { serial: serial ?? null });
 
-export const deviceLogcat = (lines?: number) =>
-  call<string>("device_logcat", { lines: lines ?? null });
+export const deviceLogcat = (lines?: number, serial?: string | null) =>
+  call<string>("device_logcat", { lines: lines ?? null, serial: serial ?? null });

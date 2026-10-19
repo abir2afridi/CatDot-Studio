@@ -6,16 +6,18 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { deviceLogcat } from "../lib/apk";
 import { IpcError } from "../lib/ipc";
+import { useUi } from "../state/ui";
 
 const LINE_OPTIONS = [100, 300, 1000] as const;
 
 export function DeviceLogsTab() {
   const { t } = useTranslation();
+  const serial = useUi((s) => s.deviceSerial);
   const [lines, setLines] = useState<number>(300);
   const [nonce, setNonce] = useState(0);
   const q = useQuery({
-    queryKey: ["device", "logcat", lines, nonce],
-    queryFn: () => deviceLogcat(lines),
+    queryKey: ["device", "logcat", serial, lines, nonce],
+    queryFn: () => deviceLogcat(lines, serial),
     retry: false,
     staleTime: 0,
   });
@@ -45,6 +47,9 @@ export function DeviceLogsTab() {
             ))}
           </select>
         </label>
+        <span className="truncate text-text-dim/60" title={serial ?? undefined}>
+          {serial != null ? t("devices.target", { serial }) : t("devices.targetAuto")}
+        </span>
         {q.data != null && (
           <span className="text-text-dim/60">
             {t("device.lineCount", { count: q.data.length === 0 ? 0 : q.data.split("\n").length })}

@@ -128,6 +128,13 @@
       "evidence": ["cargo test -p catdot-core tools::device_tools", "docs/EVIDENCE/phase-3-checkpoints-device.md"]
     },
     {
+      "id": "device-explorer",
+      "title": "Device Explorer page (live adb device list, explicit target selection driving install + logs)",
+      "phase": 4,
+      "status": "real",
+      "evidence": ["cargo test -p catdot-core tools::device_tools pick_device", "pnpm typecheck", "docs/EVIDENCE/phase-3-checkpoints-device.md"]
+    },
+    {
       "id": "settings-persistence",
       "title": "Settings persistence (SQLite, real IPC)",
       "phase": 0,

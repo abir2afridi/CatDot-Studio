@@ -22,6 +22,7 @@ Generated from `feature-registry.json` by `pnpm audit:reality`. Do not hand-edit
 | patch-manager-ui | Patch manager (pending-edit list with per-file open + revert) | 3 | real | pnpm typecheck; pnpm lint; docs/EVIDENCE/phase-3-checkpoints-device.md |
 | device-install | Device install (adb install -r of the signed APK; honest no-device errors) | 4 | real | cargo test -p catdot-core tools::device_tools; docs/EVIDENCE/phase-3-checkpoints-device.md |
 | device-logs | Device logs tab (bounded adb logcat -d dump, manual refresh) | 4 | real | cargo test -p catdot-core tools::device_tools; docs/EVIDENCE/phase-3-checkpoints-device.md |
+| device-explorer | Device Explorer page (live adb device list, explicit target selection driving install + logs) | 4 | real | cargo test -p catdot-core tools::device_tools pick_device; pnpm typecheck; docs/EVIDENCE/phase-3-checkpoints-device.md |
 | settings-persistence | Settings persistence (SQLite, real IPC) | 0 | real | cargo test -p catdot-core storage::settings; apps/desktop Settings page |
 | system-check-ui | System check UI (real toolchain detect) | 0 | real | apps/desktop SystemCheck page ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ toolchain_detect IPC |
 | system-logs | System Logs panel (real error capture + copy) | 0 | real | cargo test -p catdot-core logs; apps/desktop Dashboard ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ logs_recent / log://entry |

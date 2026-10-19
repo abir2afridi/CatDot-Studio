@@ -3,7 +3,7 @@
 // per-file unsaved drafts, and the IDE layout (sidebar/bottom panel).
 import { create } from "zustand";
 
-export type Page = "guided" | "explorer" | "ai" | "system" | "settings";
+export type Page = "guided" | "explorer" | "ai" | "devices" | "system" | "settings";
 export type BottomTab = "logs" | "build" | "diff" | "device" | "problems";
 import type { BuildReport } from "@catdot/shared-types";
 
@@ -50,6 +50,8 @@ interface UiState {
   paletteSelected: number;
   /** one-shot status-bar notice (mutation result surfaces here). */
   notice: Notice | null;
+  /** Selected device serial for install/logcat; null = first ready device. */
+  deviceSerial: string | null;
   // actions
   setPage: (p: Page) => void;
   openFile: (path: string) => void;
@@ -70,6 +72,7 @@ interface UiState {
   setPaletteOpen: (open: boolean) => void;
   setPaletteSelected: (i: number) => void;
   setNotice: (n: Notice | null) => void;
+  setDeviceSerial: (s: string | null) => void;
 }
 
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
@@ -142,4 +145,6 @@ export const useUi = create<UiState>((set) => ({
     set((s) => ({ paletteOpen, paletteSelected: paletteOpen ? s.paletteSelected : 0 })),
   setPaletteSelected: (paletteSelected) => set({ paletteSelected }),
   setNotice: (notice) => set({ notice }),
+  deviceSerial: null,
+  setDeviceSerial: (deviceSerial) => set({ deviceSerial }),
 }));
