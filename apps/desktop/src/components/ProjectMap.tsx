@@ -1,14 +1,13 @@
 // Project Map strip (Part H2): five honest steps derived from real workspace
-// state; the single most useful next action is one click away. Install is an
-// honest "Planned · Phase 4" until the device flow exists.
+// state; the single most useful next action is one click away. Install runs a
+// real `adb install -r` on the first ready device (honest errors otherwise).
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { apkBuildSign } from "../lib/apk";
+import { apkBuildSign, deviceInstallSigned } from "../lib/apk";
 import { describeError } from "../lib/opener";
 import { useProjectStage, type Stage } from "../lib/project-stage";
 import { useImportApk } from "../hooks/useImportApk";
 import { useUi } from "../state/ui";
-import { PlannedBadge } from "./PlannedBadge";
 
 const STEP_ORDER: Stage[] = ["none", "imported", "edited", "built", "signed"];
 
@@ -37,6 +36,15 @@ export function ProjectMap() {
       setLastBuild(null);
       setNotice({ text: describeError(e), ok: false });
     },
+  });
+
+  const installMut = useMutation({
+    mutationFn: () => deviceInstallSigned(),
+    onSuccess: (serial) => {
+      setNotice({ text: t("device.installed", { serial }), ok: true });
+      void queryClient.invalidateQueries({ queryKey: ["apk"] });
+    },
+    onError: (e) => setNotice({ text: describeError(e), ok: false }),
   });
 
   if (isLoading) return null;
@@ -89,6 +97,8 @@ export function ProjectMap() {
         onOpenApk={pickAndImport}
         onBuild={() => buildMut.mutate()}
         building={buildMut.isPending}
+        onInstall={() => installMut.mutate()}
+        installing={installMut.isPending}
       />
     </section>
   );
@@ -100,12 +110,16 @@ function NextStepCoach({
   onOpenApk,
   onBuild,
   building,
+  onInstall,
+  installing,
 }: {
   stage: Stage;
   importing: boolean;
   onOpenApk: () => void;
   onBuild: () => void;
   building: boolean;
+  onInstall: () => void;
+  installing: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -144,7 +158,16 @@ function NextStepCoach({
       break;
     case "signed":
       text = t("map.nextInstall");
-      action = <PlannedBadge phase={4} />;
+      action = (
+        <button
+          type="button"
+          disabled={installing}
+          onClick={onInstall}
+          className="rounded-md bg-success/15 px-2 py-0.5 text-success hover:bg-success/25 disabled:opacity-50"
+        >
+          {installing ? t("device.installing") : t("map.installBtn")}
+        </button>
+      );
       break;
   }
 

@@ -43,15 +43,20 @@ fn tool_err(step: &str, msg: impl Into<String>) -> AppError {
     )
 }
 
-struct Run {
-    code: i32,
-    out: String,
+pub(crate) struct Run {
+    pub(crate) code: i32,
+    pub(crate) out: String,
 }
 
 /// Run `exe` with `args` under a hard timeout (poll + kill tree). Output is
 /// bounded to ~8KB via the reader threads; tools that print megabytes may
 /// block their tail â€” acceptable for zipalign/apksigner (small outputs).
-fn run_timeout(exe: &Path, args: &[&str], cwd: Option<&Path>, timeout: Duration) -> Option<Run> {
+pub(crate) fn run_timeout(
+    exe: &Path,
+    args: &[&str],
+    cwd: Option<&Path>,
+    timeout: Duration,
+) -> Option<Run> {
     use std::io::Read;
     let mut c = std::process::Command::new(exe);
     c.args(args);

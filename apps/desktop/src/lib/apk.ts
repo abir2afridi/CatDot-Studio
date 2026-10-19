@@ -1,9 +1,11 @@
 ﻿// Typed IPC wrappers for the APK pipeline (Part F1â€“F5): import â†’ edit â†’
-// export â†’ sign. Errors reject as structured AppError (same `call` helper).
+// export â†’ sign, checkpoints (F4) and device steps (F7).
 import type {
   ApkReport,
   ApkStatus,
   BuildReport,
+  CheckpointInfo,
+  DeviceInfo,
   ExportResult,
   OpenedFile,
   PatchSummary,
@@ -28,8 +30,30 @@ export const apkRevertAll = () => call<PatchSummary>("apk_revert_all");
 
 export const apkPatchSummary = () => call<PatchSummary>("apk_patch_summary");
 
+export const apkPatchPaths = () => call<string[]>("apk_patch_paths");
+
 export const apkExport = () => call<ExportResult>("apk_export");
 
 export const apkBuildSign = () => call<BuildReport>("apk_build_sign");
 
 export const apkStatus = () => call<ApkStatus>("apk_status");
+
+// Part F4 change history (checkpoints — patch snapshots, not Git).
+export const checkpointCreate = (label?: string) =>
+  call<CheckpointInfo>("apk_checkpoint_create", { label: label ?? null });
+
+export const checkpointList = () => call<CheckpointInfo[]>("apk_checkpoint_list");
+
+export const checkpointRestore = (id: string) =>
+  call<PatchSummary>("apk_checkpoint_restore", { id });
+
+export const checkpointDelete = (id: string) =>
+  call<number>("apk_checkpoint_delete", { id });
+
+// Part F7 device steps (real adb; honest errors when no device/adb).
+export const deviceList = () => call<DeviceInfo[]>("device_list");
+
+export const deviceInstallSigned = () => call<string>("device_install_signed");
+
+export const deviceLogcat = (lines?: number) =>
+  call<string>("device_logcat", { lines: lines ?? null });

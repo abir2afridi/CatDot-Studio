@@ -8,6 +8,7 @@ import type { LogEntry } from "@catdot/shared-types";
 import { useUi, type BottomTab } from "../state/ui";
 import { PlannedBadge } from "./PlannedBadge";
 import { DiffTab } from "./DiffTab";
+import { DeviceLogsTab } from "./DeviceLogsTab";
 
 export function BottomPanel() {
   const { t } = useTranslation();
@@ -21,6 +22,7 @@ export function BottomPanel() {
     { id: "logs", label: t("panel.logs"), enabled: true },
     { id: "build", label: t("panel.build"), enabled: true },
     { id: "diff", label: t("panel.diff"), enabled: draft != null },
+    { id: "device", label: t("panel.device"), enabled: true },
     { id: "problems", label: t("panel.problems"), enabled: false },
   ];
 
@@ -67,6 +69,8 @@ export function BottomPanel() {
           ) : (
             <DiffTab />
           )
+        ) : activeTab === "device" ? (
+          <DeviceLogsTab />
         ) : (
           <Empty text={t("panel.problemsPlanned")} />
         )}

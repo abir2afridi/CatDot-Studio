@@ -89,6 +89,14 @@ pub fn run() {
             apk_commands::apk_export,
             apk_commands::apk_build_sign,
             apk_commands::apk_status,
+            apk_commands::apk_patch_paths,
+            apk_commands::apk_checkpoint_create,
+            apk_commands::apk_checkpoint_list,
+            apk_commands::apk_checkpoint_restore,
+            apk_commands::apk_checkpoint_delete,
+            apk_commands::device_list,
+            apk_commands::device_install_signed,
+            apk_commands::device_logcat,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

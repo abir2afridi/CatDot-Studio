@@ -10,10 +10,12 @@ use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
 
-use catdot_core::apk_types::{ApkStatus, ExportResult, OpenedFile};
+use catdot_core::apk_types::{ApkStatus, CheckpointInfo, ExportResult, OpenedFile};
 use catdot_core::errors::{AppError, ErrorCode};
 use catdot_core::security::policy::{check, AccessLevel, Autonomy, Decision, RiskTier};
-use catdot_core::tools::{align_and_sign, ensure_keystore, tool_paths, BuildReport};
+use catdot_core::tools::{
+    align_and_sign, device_tools, ensure_keystore, tool_paths, BuildReport,
+};
 use catdot_core::workspace::{
     export_apk, import_apk, patch_summary, read_entry, report_of, sha256_str, ApkReport, Patch,
     PatchSummary, MAX_TEXT_BYTES,
@@ -273,6 +275,189 @@ pub fn apk_patch_summary(apk_state: State<'_, ApkState>) -> Result<PatchSummary,
     Ok(patch_summary(&session_pairs(s)))
 }
 
+/// List the entry paths with a pending edit (for the patch-manager UI).
+#[tauri::command]
+pub fn apk_patch_paths(apk_state: State<'_, ApkState>) -> Result<Vec<String>, AppError> {
+    let g = apk_lock(&apk_state)?;
+    let s = g.as_ref().ok_or_else(no_session_err)?;
+    let mut v: Vec<String> = s.patches.keys().cloned().collect();
+    v.sort();
+    Ok(v)
+}
+
+// ---------- Checkpoints (Part F4 change history: patches snapshot, not Git) ----------
+
+#[derive(Serialize, Deserialize)]
+struct CheckpointFile {
+    label: String,
+    created_at_ms: u64,
+    auto: bool,
+    base_sha256: Option<String>,
+    patches: Vec<StoredPatch>,
+}
+
+fn checkpoints_dir(ws: &Path) -> PathBuf {
+    ws.join("checkpoints")
+}
+
+fn now_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
+}
+
+/// Checkpoint ids are timestamp digit strings — reject anything else so an id
+/// can never escape the checkpoints directory.
+fn valid_id(id: &str) -> bool {
+    !id.is_empty() && id.len() <= 20 && id.chars().all(|c| c.is_ascii_digit())
+}
+
+fn write_checkpoint(
+    ws: &Path,
+    label: &str,
+    auto: bool,
+    base_sha: &str,
+    patches: &HashMap<String, String>,
+) -> Result<CheckpointInfo, AppError> {
+    let dir = checkpoints_dir(ws);
+    std::fs::create_dir_all(&dir).map_err(|e| internal_err(format!("checkpoint dir: {e}")))?;
+    let ts = now_ms();
+    let cf = CheckpointFile {
+        label: label.to_string(),
+        created_at_ms: ts,
+        auto,
+        base_sha256: Some(base_sha.to_string()),
+        patches: patches
+            .iter()
+            .map(|(k, v)| StoredPatch { entry_path: k.clone(), content: v.clone() })
+            .collect(),
+    };
+    let path = dir.join(format!("{ts}.json"));
+    std::fs::write(&path, serde_json::to_vec(&cf)?)
+        .map_err(|e| internal_err(format!("checkpoint write: {e}")))?;
+    Ok(CheckpointInfo {
+        id: ts.to_string(),
+        label: label.to_string(),
+        created_at_ms: ts,
+        patch_count: patches.len(),
+        auto,
+    })
+}
+
+fn read_checkpoint(ws: &Path, id: &str) -> Result<CheckpointFile, AppError> {
+    if !valid_id(id) {
+        return Err(AppError::new(
+            ErrorCode::InvalidInput,
+            "invalid checkpoint id",
+            "What happened: the checkpoint identifier was not valid. What to do: re-open the change history list and retry.",
+        ));
+    }
+    let p = checkpoints_dir(ws).join(format!("{id}.json"));
+    let raw = std::fs::read_to_string(&p).map_err(|_| {
+        AppError::new(
+            ErrorCode::JobNotFound,
+            format!("checkpoint `{id}` not found"),
+            "What happened: that checkpoint no longer exists. What to do: refresh the list.",
+        )
+    })?;
+    serde_json::from_str(&raw).map_err(|e| internal_err(format!("checkpoint parse: {e}")))
+}
+
+/// Manual checkpoint ("Save restore point").
+#[tauri::command]
+pub fn apk_checkpoint_create(
+    apk_state: State<'_, ApkState>,
+    label: Option<String>,
+) -> Result<CheckpointInfo, AppError> {
+    require_allow(AccessLevel::L3EditWithApproval, RiskTier::Edit)?;
+    let g = apk_lock(&apk_state)?;
+    let s = g.as_ref().ok_or_else(no_session_err)?;
+    let label = label.unwrap_or_default();
+    let label = if label.trim().is_empty() {
+        format!("Manual · {} edits", s.patches.len())
+    } else {
+        label.chars().take(80).collect()
+    };
+    write_checkpoint(&s.ws_root, &label, false, &s.base_sha, &s.patches)
+}
+
+/// All checkpoints, newest first.
+#[tauri::command]
+pub fn apk_checkpoint_list(apk_state: State<'_, ApkState>) -> Result<Vec<CheckpointInfo>, AppError> {
+    let g = apk_lock(&apk_state)?;
+    let s = g.as_ref().ok_or_else(no_session_err)?;
+    let dir = checkpoints_dir(&s.ws_root);
+    let mut out = Vec::new();
+    if let Ok(rd) = std::fs::read_dir(&dir) {
+        for e in rd.flatten() {
+            let name = e.file_name().to_string_lossy().into_owned();
+            let Some(id) = name.strip_suffix(".json") else { continue };
+            if !valid_id(id) {
+                continue;
+            }
+            let Ok(raw) = std::fs::read_to_string(e.path()) else { continue };
+            let Ok(cf) = serde_json::from_str::<CheckpointFile>(&raw) else { continue };
+            out.push(CheckpointInfo {
+                id: id.to_string(),
+                label: cf.label,
+                created_at_ms: cf.created_at_ms,
+                patch_count: cf.patches.len(),
+                auto: cf.auto,
+            });
+        }
+    }
+    out.sort_by(|a, b| b.created_at_ms.cmp(&a.created_at_ms));
+    Ok(out)
+}
+
+/// Restore the pending-patch state saved in a checkpoint.
+#[tauri::command]
+pub fn apk_checkpoint_restore(
+    apk_state: State<'_, ApkState>,
+    id: String,
+) -> Result<PatchSummary, AppError> {
+    require_allow(AccessLevel::L3EditWithApproval, RiskTier::Edit)?;
+    let mut g = apk_lock(&apk_state)?;
+    let s = g.as_mut().ok_or_else(no_session_err)?;
+    let cf = read_checkpoint(&s.ws_root, &id)?;
+    if cf.base_sha256.as_deref() != Some(s.base_sha.as_str()) {
+        return Err(AppError::new(
+            ErrorCode::ImportUnsupportedType,
+            "checkpoint base hash mismatch",
+            "What happened: this checkpoint was made for a different APK import. What to do: import the matching APK again to use it.",
+        ));
+    }
+    s.patches = cf
+        .patches
+        .into_iter()
+        .map(|sp| (sp.entry_path, sp.content))
+        .collect();
+    let base = s.base_sha.clone();
+    save_patches(s, &base)?;
+    Ok(patch_summary(&session_pairs(s)))
+}
+
+/// Delete a checkpoint; returns the remaining count.
+#[tauri::command]
+pub fn apk_checkpoint_delete(apk_state: State<'_, ApkState>, id: String) -> Result<usize, AppError> {
+    require_allow(AccessLevel::L3EditWithApproval, RiskTier::Edit)?;
+    let g = apk_lock(&apk_state)?;
+    let s = g.as_ref().ok_or_else(no_session_err)?;
+    if !valid_id(&id) {
+        return Err(AppError::new(
+            ErrorCode::InvalidInput,
+            "invalid checkpoint id",
+            "What happened: the checkpoint identifier was not valid. What to do: refresh the list and retry.",
+        ));
+    }
+    let p = checkpoints_dir(&s.ws_root).join(format!("{id}.json"));
+    std::fs::remove_file(&p)
+        .map_err(|e| internal_err(format!("checkpoint delete: {e}")))?;
+    let dir = checkpoints_dir(&s.ws_root);
+    Ok(std::fs::read_dir(&dir).map(|rd| rd.flatten().count()).unwrap_or(0))
+}
+
 /// Export the patched APK (unsigned) to `<workspace>/exported.apk`.
 #[tauri::command]
 pub fn apk_export(apk_state: State<'_, ApkState>) -> Result<ExportResult, AppError> {
@@ -287,7 +472,7 @@ pub fn apk_export(apk_state: State<'_, ApkState>) -> Result<ExportResult, AppErr
     Ok(ExportResult { path: out.to_string_lossy().into_owned(), sha256: sha, size })
 }
 
-/// Full build: export â†’ zipalign â†’ apksigner (debug keystore auto-created).
+/// Full build: auto-checkpoint (if needed) → export → zipalign → apksigner.
 #[tauri::command]
 pub fn apk_build_sign(
     app: AppHandle,
@@ -296,6 +481,12 @@ pub fn apk_build_sign(
     require_allow(AccessLevel::L3EditWithApproval, RiskTier::Build)?;
     let g = apk_lock(&apk_state)?;
     let s = g.as_ref().ok_or_else(no_session_err)?;
+    // Change history (Part F4): snapshot the patch set before a build, unless
+    // the newest checkpoint already holds exactly this state.
+    if !s.patches.is_empty() && !latest_checkpoint_matches(s)? {
+        let label = format!("Auto · before build · {} edits", s.patches.len());
+        let _ = write_checkpoint(&s.ws_root, &label, true, &s.base_sha, &s.patches)?;
+    }
     let unsigned = s.ws_root.join("unsigned.apk");
     export_apk(&s.ws_root.join("original.apk"), &session_pairs(s), &unsigned)?;
     let (_zipalign, _apksigner, keytool) = tool_paths()?;
@@ -303,6 +494,61 @@ pub fn apk_build_sign(
     let aligned = s.ws_root.join("aligned.apk");
     let signed = s.ws_root.join("signed.apk");
     align_and_sign(&unsigned, &aligned, &signed, &s.ws_root, &ks, &pass, &alias)
+}
+
+/// true when the newest checkpoint stores byte-identical patch content.
+fn latest_checkpoint_matches(s: &ApkSession) -> Result<bool, AppError> {
+    let dir = checkpoints_dir(&s.ws_root);
+    let mut newest: Option<(u64, PathBuf)> = None;
+    if let Ok(rd) = std::fs::read_dir(&dir) {
+        for e in rd.flatten() {
+            let name = e.file_name().to_string_lossy().into_owned();
+            let Some(id) = name.strip_suffix(".json") else { continue };
+            let Ok(ts) = id.parse::<u64>() else { continue };
+            if newest.as_ref().is_none_or(|(t, _)| ts > *t) {
+                newest = Some((ts, e.path()));
+            }
+        }
+    }
+    let Some((_, path)) = newest else { return Ok(false) };
+    let Ok(raw) = std::fs::read_to_string(path) else { return Ok(false) };
+    let Ok(cf) = serde_json::from_str::<CheckpointFile>(&raw) else { return Ok(false) };
+    if cf.patches.len() != s.patches.len() {
+        return Ok(false);
+    }
+    Ok(cf.patches.iter().all(|sp| {
+        s.patches.get(&sp.entry_path).map(|c| c == &sp.content).unwrap_or(false)
+    }))
+}
+
+// ---------- Device (Phase 4): list, install signed APK, bounded logcat ----------
+
+/// Attached devices/emulators (real `adb devices -l`).
+#[tauri::command]
+pub fn device_list() -> Result<Vec<device_tools::DeviceInfo>, AppError> {
+    device_tools::list_devices()
+}
+
+/// Install the workspace signed APK on the first ready device.
+#[tauri::command]
+pub fn device_install_signed(
+    app: AppHandle,
+    apk_state: State<'_, ApkState>,
+) -> Result<String, AppError> {
+    require_allow(AccessLevel::L3EditWithApproval, RiskTier::Device)?;
+    let g = apk_lock(&apk_state)?;
+    let ws = match g.as_ref() {
+        Some(s) => s.ws_root.clone(),
+        None => workspace_root(&app)?,
+    };
+    let signed = ws.join("signed.apk");
+    device_tools::install_apk(&signed)
+}
+
+/// Bounded recent device log (`adb logcat -d -t N`).
+#[tauri::command]
+pub fn device_logcat(lines: Option<u32>) -> Result<String, AppError> {
+    device_tools::logcat_dump(lines.unwrap_or(300))
 }
 
 #[tauri::command]

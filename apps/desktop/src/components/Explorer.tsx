@@ -6,6 +6,7 @@ import { apkExport, apkBuildSign, apkImport, apkReport, apkRevertAll, apkPatchSu
 import { pickApkPath } from "../lib/pick";
 import { IpcError } from "../lib/ipc";
 import { useUi } from "../state/ui";
+import { ChangeHistory } from "./ChangeHistory";
 
 interface TreeNode {
   name: string;
@@ -216,6 +217,7 @@ export function Explorer() {
           {message.text}
         </p>
       )}
+      {report.data != null && <ChangeHistory />}
     </div>
   );
 }

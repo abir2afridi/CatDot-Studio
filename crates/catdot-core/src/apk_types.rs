@@ -39,3 +39,15 @@ pub struct ApkStatus {
     /// Absolute workspace directory (outputs, patches.json live here).
     pub workspace_dir: String,
 }
+
+/// One saved workspace state (Part F4 change history, not Git).
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export)]
+pub struct CheckpointInfo {
+    pub id: String,
+    pub label: String,
+    pub created_at_ms: u64,
+    pub patch_count: usize,
+    /// true when created automatically before a build.
+    pub auto: bool,
+}

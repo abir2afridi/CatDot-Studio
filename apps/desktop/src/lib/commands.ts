@@ -4,7 +4,7 @@
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apkExport, apkBuildSign, apkImport, apkRevertAll, apkStatus } from "./apk";
+import { apkExport, apkBuildSign, apkImport, apkRevertAll, apkStatus, checkpointCreate, deviceInstallSigned } from "./apk";
 import { pickApkPath } from "./pick";
 import { IpcError } from "./ipc";
 import { revealPath } from "./opener";
@@ -104,6 +104,24 @@ export function useCommands(): PaletteCommand[] {
 
   // Reveal-in-folder targets (real workspace files only).
   const status = useQuery({ queryKey: ["apk", "status"], queryFn: apkStatus, staleTime: 5_000 });
+
+  const installMut = useMutation({
+    mutationFn: () => deviceInstallSigned(),
+    onSuccess: (serial) => {
+      setNotice({ text: t("device.installed", { serial }), ok: true });
+      invalidateApk();
+    },
+    onError: (e) => setNotice({ text: describe(e), ok: false }),
+  });
+
+  const checkpointMut = useMutation({
+    mutationFn: () => checkpointCreate(),
+    onSuccess: (cp) => {
+      setNotice({ text: t("hist.created", { count: cp.patch_count }), ok: true });
+      invalidateApk();
+    },
+    onError: (e) => setNotice({ text: describe(e), ok: false }),
+  });
   const revealOriginal = useCallback(() => {
     const p = status.data?.original_apk;
     if (p != null) {
@@ -164,6 +182,13 @@ export function useCommands(): PaletteCommand[] {
             run: () => revealSigned(),
           },
           {
+            id: "apk.installDevice",
+            titleKey: "cmd.installDevice",
+            disabledReason: status.data?.signed_apk == null ? t("cmd.noSigned") : undefined,
+            run: () => installMut.mutate(),
+          },
+          { id: "apk.saveCheckpoint", titleKey: "cmd.saveCheckpoint", run: () => checkpointMut.mutate() },
+          {
             id: "editor.save",
             titleKey: "cmd.saveTab",
             disabledReason: activeFile == null || draft == null ? nothingKey : undefined,
@@ -196,6 +221,8 @@ export function useCommands(): PaletteCommand[] {
       nothingKey,
       revealOriginal,
       revealSigned,
+      installMut,
+      checkpointMut,
       status.data?.original_apk,
       status.data?.signed_apk,
     ],

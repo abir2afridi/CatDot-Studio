@@ -4,7 +4,7 @@
 // badge and are not clickable — never fake progression.
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { apkBuildSign } from "../lib/apk";
+import { apkBuildSign, deviceInstallSigned } from "../lib/apk";
 import { describeError } from "../lib/opener";
 import { useProjectStage, type Stage } from "../lib/project-stage";
 import { useImportApk } from "../hooks/useImportApk";
@@ -20,7 +20,7 @@ interface StepDef {
   /** stage at which this step is "done" (index in STEP_ORDER) */
   doneAt: number;
   /** optional real action button */
-  action?: "openApk" | "buildSign" | "openExplorer";
+  action?: "openApk" | "buildSign" | "openExplorer" | "install";
   /** honest phase badge when the underlying feature is not real yet */
   plannedPhase?: number;
 }
@@ -33,7 +33,7 @@ const STEPS: StepDef[] = [
   { id: "edit", titleKey: "guided.s3", descKey: "guided.s3desc", doneAt: 2 },
   { id: "manifest", titleKey: "guided.s4", descKey: "guided.s4desc", doneAt: 2, plannedPhase: 3 },
   { id: "build", titleKey: "guided.s5", descKey: "guided.s5desc", doneAt: 3, action: "buildSign" },
-  { id: "install", titleKey: "guided.s6", descKey: "guided.s6desc", doneAt: 4, plannedPhase: 4 },
+  { id: "install", titleKey: "guided.s6", descKey: "guided.s6desc", doneAt: 4, action: "install" },
 ];
 
 export function GuidedPage() {
@@ -57,6 +57,14 @@ export function GuidedPage() {
       setLastBuild(null);
       setNotice({ text: describeError(e), ok: false });
     },
+  });
+
+  const installMut = useMutation({
+    mutationFn: () => deviceInstallSigned(),
+    onSuccess: (serial) => {
+      setNotice({ text: t("device.installed", { serial }), ok: true });
+    },
+    onError: (e) => setNotice({ text: describeError(e), ok: false }),
   });
 
   const idx = STEP_ORDER.indexOf(stage);
@@ -141,6 +149,16 @@ export function GuidedPage() {
                         className="rounded-md bg-accent/20 px-3 py-1.5 text-xs text-accent hover:bg-accent/30 disabled:opacity-50"
                       >
                         {buildMut.isPending ? t("explorer.building") : t("explorer.buildSign")}
+                      </button>
+                    )}
+                    {s.action === "install" && (
+                      <button
+                        type="button"
+                        disabled={installMut.isPending}
+                        onClick={() => installMut.mutate()}
+                        className="rounded-md bg-success/15 px-3 py-1.5 text-xs text-success hover:bg-success/25 disabled:opacity-50"
+                      >
+                        {installMut.isPending ? t("device.installing") : t("map.installBtn")}
                       </button>
                     )}
                   </div>
