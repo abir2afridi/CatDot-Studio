@@ -7,6 +7,7 @@ import type {
   CheckpointInfo,
   DeviceInfo,
   ExportResult,
+  ManifestInfo,
   OpenedFile,
   PatchSummary,
 } from "@catdot/shared-types";
@@ -14,6 +15,20 @@ import { call } from "./ipc";
 
 export const apkImport = (sourcePath: string) =>
   call<ApkReport>("apk_import", { sourcePath });
+
+export const apkManifest = () => call<ManifestInfo>("apk_manifest");
+
+// Structured edit ops (Guided recipes / decode pipeline).
+export const apkDecode = () => call<string>("apk_decode");
+
+export const apkSetLabel = (label: string) =>
+  call<PatchSummary>("apk_set_label", { label });
+
+export const apkTogglePermission = (perm: string, add: boolean) =>
+  call<PatchSummary>("apk_toggle_permission", { perm, add });
+
+export const apkSetVersion = (code: number, name?: string | null) =>
+  call<PatchSummary>("apk_set_version", { code, name: name ?? null });
 
 export const apkReport = () => call<ApkReport>("apk_report");
 

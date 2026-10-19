@@ -20,6 +20,8 @@ export type { ExportResult } from "./generated/ExportResult";
 export type { JobEvent } from "./generated/JobEvent";
 export type { JobState } from "./generated/JobState";
 export type { LogEntry } from "./generated/LogEntry";
+export type { ManifestComponent } from "./generated/ManifestComponent";
+export type { ManifestInfo } from "./generated/ManifestInfo";
 export type { OpenAICompatConfig } from "./generated/OpenAICompatConfig";
 export type { OpenedFile } from "./generated/OpenedFile";
 export type { Patch } from "./generated/Patch";

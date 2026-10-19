@@ -9,6 +9,7 @@ import { useUi, type BottomTab } from "../state/ui";
 import { PlannedBadge } from "./PlannedBadge";
 import { DiffTab } from "./DiffTab";
 import { DeviceLogsTab } from "./DeviceLogsTab";
+import { ManifestTab } from "./ManifestTab";
 
 export function BottomPanel() {
   const { t } = useTranslation();
@@ -23,6 +24,7 @@ export function BottomPanel() {
     { id: "build", label: t("panel.build"), enabled: true },
     { id: "diff", label: t("panel.diff"), enabled: draft != null },
     { id: "device", label: t("panel.device"), enabled: true },
+    { id: "manifest", label: t("panel.manifest"), enabled: true },
     { id: "problems", label: t("panel.problems"), enabled: false },
   ];
 
@@ -71,6 +73,8 @@ export function BottomPanel() {
           )
         ) : activeTab === "device" ? (
           <DeviceLogsTab />
+        ) : activeTab === "manifest" ? (
+          <ManifestTab />
         ) : (
           <Empty text={t("panel.problemsPlanned")} />
         )}

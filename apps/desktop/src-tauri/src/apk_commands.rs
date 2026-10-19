@@ -14,11 +14,11 @@ use catdot_core::apk_types::{ApkStatus, CheckpointInfo, ExportResult, OpenedFile
 use catdot_core::errors::{AppError, ErrorCode};
 use catdot_core::security::policy::{check, AccessLevel, Autonomy, Decision, RiskTier};
 use catdot_core::tools::{
-    align_and_sign, device_tools, ensure_keystore, tool_paths, BuildReport,
+    align_and_sign, decode, device_tools, edit_ops, ensure_keystore, rebuild, tool_paths, BuildReport,
 };
 use catdot_core::workspace::{
-    export_apk, import_apk, patch_summary, read_entry, report_of, sha256_str, ApkReport, Patch,
-    PatchSummary, MAX_TEXT_BYTES,
+    apply_decoded_patches, export_apk, import_apk, patch_summary, read_entry, report_of, sha256_str,
+    split_decoded_patches, ApkReport, Patch, PatchSummary, MAX_TEXT_BYTES,
 };
 
 use crate::AppState;
@@ -488,12 +488,42 @@ pub fn apk_build_sign(
         let _ = write_checkpoint(&s.ws_root, &label, true, &s.base_sha, &s.patches)?;
     }
     let unsigned = s.ws_root.join("unsigned.apk");
-    export_apk(&s.ws_root.join("original.apk"), &session_pairs(s), &unsigned)?;
+    let all_pairs = session_pairs(s);
+    let (decoded_pairs, zip_pairs) = split_decoded_patches(&all_pairs);
+    if !decoded_pairs.is_empty() {
+        // Rebuilt route: fresh decode of the ORIGINAL, apply the decoded-tree
+        // patches, apktool b → the same rebuilt base. Residual zip patches
+        // (assets etc.) are then applied on top of the rebuilt APK.
+        let rebuilt = rebuild_patched_project(s)?;
+        if zip_pairs.is_empty() {
+            std::fs::copy(&rebuilt, &unsigned)?;
+        } else {
+            let staged = s.ws_root.join("staged.apk");
+            export_apk(&rebuilt, &zip_pairs, &staged)?;
+            std::fs::copy(&staged, &unsigned)?;
+        }
+    } else {
+        export_apk(&s.ws_root.join("original.apk"), &zip_pairs, &unsigned)?;
+    }
     let (_zipalign, _apksigner, keytool) = tool_paths()?;
     let (ks, pass, alias) = ensure_keystore(&data_dir(&app)?, &keytool)?;
     let aligned = s.ws_root.join("aligned.apk");
     let signed = s.ws_root.join("signed.apk");
     align_and_sign(&unsigned, &aligned, &signed, &s.ws_root, &ks, &pass, &alias)
+}
+
+/// Fresh decode of the immutable original + apply the session's decoded-tree
+/// patches + `apktool b`. Deterministic: the physical decoded dir is never a
+/// build input.
+fn rebuild_patched_project(s: &ApkSession) -> Result<PathBuf, AppError> {
+    let decoded = s.ws_root.join("decoded");
+    decode(&s.ws_root.join("original.apk"), &decoded)?;
+    let all_pairs = session_pairs(s);
+    let (decoded_pairs, _) = split_decoded_patches(&all_pairs);
+    apply_decoded_patches(&decoded, &decoded_pairs)?;
+    let rebuilt = s.ws_root.join("rebuilt.apk");
+    rebuild(&decoded, &rebuilt)?;
+    Ok(rebuilt)
 }
 
 /// true when the newest checkpoint stores byte-identical patch content.
@@ -519,6 +549,176 @@ fn latest_checkpoint_matches(s: &ApkSession) -> Result<bool, AppError> {
     Ok(cf.patches.iter().all(|sp| {
         s.patches.get(&sp.entry_path).map(|c| c == &sp.content).unwrap_or(false)
     }))
+}
+
+// ---------- Manifest analyzer (Phase 2): aapt2 dump xmltree, no decode ----------
+
+/// Read-only structured analysis of the ORIGINAL APK's manifest.
+#[tauri::command]
+pub fn apk_manifest(
+    apk_state: State<'_, ApkState>,
+) -> Result<catdot_core::tools::ManifestInfo, AppError> {
+    let g = apk_lock(&apk_state)?;
+    let s = g.as_ref().ok_or_else(no_session_err)?;
+    catdot_core::tools::manifest_info(&s.ws_root.join("original.apk"))
+}
+
+// ---------- Structured edit ops (Part F4 / Guided recipes) ----------
+
+/// Decode once if needed; returns the decoded project dir.
+fn ensure_decoded(s: &ApkSession) -> Result<PathBuf, AppError> {
+    let decoded = s.ws_root.join("decoded");
+    if !decoded.join("AndroidManifest.xml").is_file() {
+        decode(&s.ws_root.join("original.apk"), &decoded)?;
+    }
+    Ok(decoded)
+}
+
+fn record_patch(s: &mut ApkSession, key: &str, content: String) -> Result<PatchSummary, AppError> {
+    s.patches.insert(key.to_string(), content);
+    let base = s.base_sha.clone();
+    save_patches(s, &base)?;
+    Ok(patch_summary(&session_pairs(s)))
+}
+
+fn invalid(msg: &str, user: &str) -> AppError {
+    AppError::new(ErrorCode::InvalidInput, msg.to_string(), user.to_string())
+}
+
+fn load_manifest(decoded: &Path) -> Result<String, AppError> {
+    std::fs::read_to_string(decoded.join("AndroidManifest.xml")).map_err(|e| {
+        internal_err(format!("decoded manifest unreadable: {e}"))
+    })
+}
+
+#[tauri::command]
+pub fn apk_decode(apk_state: State<'_, ApkState>) -> Result<String, AppError> {
+    require_allow(AccessLevel::L3EditWithApproval, RiskTier::Edit)?;
+    let g = apk_lock(&apk_state)?;
+    let s = g.as_ref().ok_or_else(no_session_err)?;
+    let decoded = ensure_decoded(s)?;
+    let files = count_decoded_files(&decoded);
+    Ok(format!("decoded ready · {files} files"))
+}
+
+fn count_decoded_files(dir: &Path) -> usize {
+    std::fs::read_dir(dir)
+        .map(|entries| {
+            entries
+                .flatten()
+                .map(|e| {
+                    if e.path().is_dir() {
+                        count_decoded_files(&e.path())
+                    } else {
+                        1
+                    }
+                })
+                .sum()
+        })
+        .unwrap_or(0)
+}
+
+/// Guided recipe: rename the app label (string reference or literal).
+#[tauri::command]
+pub fn apk_set_label(
+    apk_state: State<'_, ApkState>,
+    label: String,
+) -> Result<PatchSummary, AppError> {
+    require_allow(AccessLevel::L3EditWithApproval, RiskTier::Edit)?;
+    let label = label.trim();
+    if label.is_empty() || label.len() > 80 {
+        return Err(
+            invalid("label too long or empty", "What happened: the label must be 1–80 characters. What to do: enter a shorter app name.")
+        );
+    }
+    let mut g = apk_lock(&apk_state)?;
+    let s = g.as_mut().ok_or_else(no_session_err)?;
+    let decoded = ensure_decoded(s)?;
+    let manifest = load_manifest(&decoded)?;
+    let current = edit_ops::application_label(&manifest);
+    let key = "decoded/AndroidManifest.xml";
+    match current.as_deref() {
+        Some(l) if l.starts_with("@string/") => {
+            let name = l.trim_start_matches("@string/");
+            let strings_path = decoded.join("res").join("values").join("strings.xml");
+            let strings = std::fs::read_to_string(&strings_path)
+                .map_err(|_| internal_err(format!("missing {}", strings_path.display())))?;
+            let patched = edit_ops::set_string_entry(&strings, name, label);
+            std::fs::write(&strings_path, &patched)?;
+            record_patch(
+                s,
+                "decoded/res/values/strings.xml",
+                patched,
+            )
+        }
+        _ => {
+            // literal label (or no attribute yet) → patch the manifest
+            let patched = edit_ops::set_application_attr(&manifest, "label", label);
+            std::fs::write(decoded.join("AndroidManifest.xml"), &patched)?;
+            record_patch(s, key, patched)
+        }
+    }
+}
+
+/// Guided recipe: add/remove a `<uses-permission>`.
+#[tauri::command]
+pub fn apk_toggle_permission(
+    apk_state: State<'_, ApkState>,
+    perm: String,
+    add: bool,
+) -> Result<PatchSummary, AppError> {
+    require_allow(AccessLevel::L3EditWithApproval, RiskTier::Edit)?;
+    let p = perm.trim();
+    if p.is_empty() || p.len() > 120 || p.contains('"') || p.contains('<') {
+        return Err(invalid(
+            "bad permission name",
+            "What happened: the permission name is not a valid manifest value (e.g. android.permission.CAMERA).",
+        ));
+    }
+    let mut g = apk_lock(&apk_state)?;
+    let s = g.as_mut().ok_or_else(no_session_err)?;
+    let decoded = ensure_decoded(s)?;
+    let manifest = load_manifest(&decoded)?;
+    let patched = if add {
+        edit_ops::add_permission(&manifest, p)
+            .ok_or_else(|| internal_err("permission already present"))?
+    } else {
+        edit_ops::remove_permission(&manifest, p)
+            .ok_or_else(|| internal_err("permission not present"))?
+    };
+    std::fs::write(decoded.join("AndroidManifest.xml"), &patched)?;
+    record_patch(s, "decoded/AndroidManifest.xml", patched)
+}
+
+/// Guided recipe: set versionCode / versionName on the manifest tag.
+#[tauri::command]
+pub fn apk_set_version(
+    apk_state: State<'_, ApkState>,
+    code: u32,
+    name: Option<String>,
+) -> Result<PatchSummary, AppError> {
+    require_allow(AccessLevel::L3EditWithApproval, RiskTier::Edit)?;
+    if code == 0 {
+        return Err(invalid(
+            "versionCode must be positive",
+            "What happened: versionCode must be ≥ 1.",
+        ));
+    }
+    if let Some(n) = &name {
+        if n.trim().len() > 40 {
+            return Err(invalid(
+                "versionName too long",
+                "What happened: versionName must be ≤ 40 characters.",
+            ));
+        }
+    }
+    let mut g = apk_lock(&apk_state)?;
+    let s = g.as_mut().ok_or_else(no_session_err)?;
+    let decoded = ensure_decoded(s)?;
+    let manifest = load_manifest(&decoded)?;
+    let patched = edit_ops::set_version(&manifest, code, name.as_deref());
+    std::fs::write(decoded.join("AndroidManifest.xml"), &patched)?;
+    record_patch(s, "decoded/AndroidManifest.xml", patched)
 }
 
 // ---------- Device (Phase 4): list, install signed APK, bounded logcat ----------

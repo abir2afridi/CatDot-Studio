@@ -4,7 +4,7 @@
 import { create } from "zustand";
 
 export type Page = "guided" | "explorer" | "ai" | "devices" | "system" | "settings";
-export type BottomTab = "logs" | "build" | "diff" | "device" | "problems";
+export type BottomTab = "logs" | "build" | "diff" | "device" | "manifest" | "problems";
 import type { BuildReport } from "@catdot/shared-types";
 
 export interface PaletteCommand {
