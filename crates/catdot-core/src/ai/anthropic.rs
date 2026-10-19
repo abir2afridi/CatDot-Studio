@@ -16,8 +16,8 @@ use ts_rs::TS;
 use crate::errors::{AppError, ErrorCode};
 
 use super::{
-    AiStreamEvent, ChatMessage, ChatUsage, ConnectionFailure, Provider, ProviderCapabilities,
-    auth_error, classify_http_status,
+    auth_error, status_to_app_error, AiStreamEvent, ChatMessage, ChatUsage, Provider,
+    ProviderCapabilities,
 };
 
 type BoxFut<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
@@ -73,28 +73,6 @@ impl Anthropic {
         rb.header("x-api-key", &self.cfg.api_key)
             .header("anthropic-version", ANTHROPIC_VERSION)
     }
-
-    fn status_to_err(&self, status: u16) -> AppError {
-        match classify_http_status(status) {
-            ConnectionFailure::Auth => auth_error(self.id()),
-            ConnectionFailure::RateLimited => AppError::new(
-                ErrorCode::ProviderRateLimited, format!("anthropic: HTTP {status}"),
-                "What happened: the provider is rate-limiting you. What to do: wait and retry, or lower the request rate.",
-            ).retryable(),
-            ConnectionFailure::Quota => AppError::new(
-                ErrorCode::ProviderQuota, format!("anthropic: HTTP {status}"),
-                "What happened: the provider reports a quota/billing problem. What to do: check your plan/credits.",
-            ),
-            ConnectionFailure::ModelNotFound => AppError::new(
-                ErrorCode::ProviderModelNotFound, format!("anthropic: HTTP {status}"),
-                "What happened: the endpoint returned 404. What to do: verify the base URL and model name.",
-            ),
-            _ => AppError::new(
-                ErrorCode::ProviderNetwork, format!("anthropic: HTTP {status}"),
-                "What happened: the AI endpoint returned an error. What to do: check the URL.",
-            ),
-        }
-    }
 }
 
 /// Map an SSE `error` event's `error.type` to the closed error taxonomy.
@@ -134,7 +112,11 @@ fn to_wire_messages(messages: &[ChatMessage]) -> (String, Vec<Value>) {
         if m.role == "system" {
             system_parts.push(m.content.as_str());
         } else {
-            let role = if m.role == "assistant" { "assistant" } else { "user" };
+            let role = if m.role == "assistant" {
+                "assistant"
+            } else {
+                "user"
+            };
             wire.push(serde_json::json!({ "role": role, "content": m.content }));
         }
     }
@@ -167,7 +149,7 @@ impl Provider for Anthropic {
                 })?;
             let status = resp.status().as_u16();
             if !(200..300).contains(&status) {
-                return Err(self.status_to_err(status));
+                return Err(status_to_app_error(self.id(), status));
             }
             Ok(ProviderCapabilities {
                 tools: false,
@@ -208,7 +190,7 @@ impl Provider for Anthropic {
                 })?;
             let status = resp.status().as_u16();
             if !(200..300).contains(&status) {
-                let err = self.status_to_err(status);
+                let err = status_to_app_error(self.id(), status);
                 let _ = tx.send(AiStreamEvent::Error {
                     code: format!("{:?}", err.code),
                     message: err.message.clone(),
@@ -276,8 +258,7 @@ impl Provider for Anthropic {
                             return Ok(usage);
                         }
                         Some("error") => {
-                            let err_type =
-                                parsed["error"]["type"].as_str().unwrap_or("api_error");
+                            let err_type = parsed["error"]["type"].as_str().unwrap_or("api_error");
                             let message = parsed["error"]["message"]
                                 .as_str()
                                 .unwrap_or("unknown error");
@@ -306,35 +287,7 @@ impl Provider for Anthropic {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::net::SocketAddr;
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    use tokio::net::TcpListener;
-
-    /// Spawn a tiny HTTP server that replies with a canned response.
-    /// Returns the base_url (http://127.0.0.1:port) and the server task.
-    async fn spawn_server(
-        status_line: &'static str,
-        content_type: &'static str,
-        body: String,
-    ) -> (String, tokio::task::JoinHandle<()>) {
-        let listener = TcpListener::bind::<SocketAddr>("127.0.0.1:0".parse().unwrap())
-            .await
-            .expect("bind");
-        let addr = listener.local_addr().expect("addr");
-        let handle = tokio::spawn(async move {
-            if let Ok((mut sock, _)) = listener.accept().await {
-                let mut buf = vec![0u8; 8192];
-                let _ = sock.read(&mut buf).await;
-                let resp = format!(
-                    "{status_line}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
-                    body.len()
-                );
-                let _ = sock.write_all(resp.as_bytes()).await;
-                let _ = sock.shutdown().await;
-            }
-        });
-        (format!("http://{addr}"), handle)
-    }
+    use crate::ai::test_server::spawn_server;
 
     fn chat_msg() -> Vec<ChatMessage> {
         vec![ChatMessage {
@@ -428,21 +381,6 @@ mod tests {
             }
         }
         assert!(saw_error_event);
-        let _ = h.await;
-    }
-
-    #[tokio::test]
-    async fn stream_chat_http_401_is_auth_error() {
-        let (base, h) =
-            spawn_server("HTTP/1.1 401 Unauthorized", "application/json", "{}".into()).await;
-        let p = provider(&base);
-        let (tx, _rx) = mpsc::unbounded_channel();
-        let cancel = AtomicBool::new(false);
-        let err = p
-            .stream_chat(&chat_msg(), "m", tx, &cancel)
-            .await
-            .expect_err("401");
-        assert_eq!(err.code, ErrorCode::ProviderAuth);
         let _ = h.await;
     }
 }

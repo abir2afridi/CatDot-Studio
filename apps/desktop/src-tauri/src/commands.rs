@@ -6,7 +6,8 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use catdot_core::ai::{
-    AiStreamEvent, ChatMessage, OpenAICompat, OpenAICompatConfig, Provider, ProviderCapabilities,
+    AiStreamEvent, ChatMessage, Provider, ProviderCapabilities, provider_config_from_value,
+    provider_from_config,
 };
 use catdot_core::errors::{AppError, ErrorCode};
 use catdot_core::rusqlite;
@@ -109,13 +110,13 @@ pub async fn toolchain_detect() -> Result<catdot_core::tools::ToolchainReport, A
 
 // ---------- AI provider (real connect-test + streaming chat) ----------
 
-fn build_provider(state: &AppState) -> Result<OpenAICompat, AppError> {
+fn build_provider(state: &AppState) -> Result<Box<dyn Provider>, AppError> {
     build_provider_inner(state).inspect_err(|e| {
         log_err("ai", e);
     })
 }
 
-fn build_provider_inner(state: &AppState) -> Result<OpenAICompat, AppError> {
+fn build_provider_inner(state: &AppState) -> Result<Box<dyn Provider>, AppError> {
     let db = state.db.lock().map_err(|_| {
         AppError::new(ErrorCode::StorageError, "db lock poisoned", "Restart the app.")
     })?;
@@ -128,12 +129,17 @@ fn build_provider_inner(state: &AppState) -> Result<OpenAICompat, AppError> {
             )
         })?;
     drop(db);
-    let cfg: OpenAICompatConfig = serde_json::from_value(cfg_val)?;
-    let key = state
-        .secrets
-        .get(SECRETS_SERVICE, &cfg.key_account)?
-        .unwrap_or_default();
-    Ok(OpenAICompat::new(cfg, key))
+    let cfg = provider_config_from_value(cfg_val)?;
+    // OpenAI-compatible configs name a secret-store account; Anthropic and
+    // Gemini carry their key in the config struct itself.
+    let key = match cfg.key_account() {
+        Some(account) => state
+            .secrets
+            .get(SECRETS_SERVICE, account)?
+            .unwrap_or_default(),
+        None => String::new(),
+    };
+    Ok(provider_from_config(cfg, key))
 }
 
 #[tauri::command]
@@ -193,11 +199,10 @@ async fn ai_chat_start_inner(
         let db = state.db.lock().map_err(|_| {
             AppError::new(ErrorCode::StorageError, "db lock poisoned", "Restart the app.")
         })?;
-        let cfg: OpenAICompatConfig =
-            serde_json::from_value(storage::settings_get(&db, AI_PROVIDER_KEY)?.ok_or_else(|| {
-                AppError::new(ErrorCode::InvalidInput, "no provider", "Configure an AI provider.")
-            })?)?;
-        cfg.default_model
+        let cfg = provider_config_from_value(storage::settings_get(&db, AI_PROVIDER_KEY)?.ok_or_else(|| {
+            AppError::new(ErrorCode::InvalidInput, "no provider", "Configure an AI provider.")
+        })?)?;
+        cfg.default_model().to_string()
     };
 
     let stream_id = format!("chat-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0));
