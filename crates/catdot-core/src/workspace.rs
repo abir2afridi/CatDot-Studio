@@ -302,6 +302,51 @@ pub fn patch_summary(patches: &[Patch]) -> PatchSummary {
     }
 }
 
+/// Apply decoded-tree text patches (`decoded/<rel-path>`) to a decoded project
+/// directory. Every target must be an EXISTING file of the decoded tree (we do
+/// not create new project files) and traversal (`..`) is rejected — same
+/// sandbox rules as zip entries. Returns the applied count.
+pub fn apply_decoded_patches(decoded_dir: &Path, patches: &[Patch]) -> Result<usize, AppError> {
+    let mut applied = 0;
+    for p in patches {
+        let Some(rel) = p.entry_path.strip_prefix("decoded/") else {
+            return Err(unknown_entry(&p.entry_path));
+        };
+        let rel = rel.replace('\\', "/");
+        let bad = rel.split('/').any(|c| c == ".." || c.is_empty()) || rel.ends_with('/');
+        if bad {
+            return Err(AppError::new(
+                ErrorCode::InvalidInput,
+                format!("decoded patch path rejected: {rel}"),
+                "What happened: a decoded edit has an unsafe target path. What to do: revert that edit in Change history.",
+            ));
+        }
+        if rel.starts_with("build/") {
+            return Err(AppError::new(
+                ErrorCode::InvalidInput,
+                "decoded build dir is not editable",
+                "What happened: apktool's build/ directory is generated. What to do: edit the source files (res/, assets/, AndroidManifest.xml) instead.",
+            ));
+        }
+        let file = decoded_dir.join(&rel);
+        if !file.is_file() {
+            return Err(unknown_entry(&p.entry_path));
+        }
+        std::fs::write(&file, &p.content)?;
+        applied += 1;
+    }
+    Ok(applied)
+}
+
+/// The decoded-tree sub-patches of a patch set (`decoded/…` keys).
+pub fn split_decoded_patches(patches: &[Patch]) -> (Vec<Patch>, Vec<Patch>) {
+    let (dec, zip): (Vec<_>, Vec<_>) = patches
+        .iter()
+        .cloned()
+        .partition(|p| p.entry_path.starts_with("decoded/"));
+    (dec, zip)
+}
+
 /// Workspace anchor for a project (`resolve_in_project` applies on top).
 pub fn workspace_root_for(data_dir: &Path, project_id: &str) -> PathBuf {
     data_dir.join("projects").join(project_id).join("workspace")
@@ -354,6 +399,75 @@ mod tests {
         assert_eq!(super::read_entry(&p, "assets/a.xml").unwrap(), "hello");
         assert!(super::read_entry(&p, "no/pe").is_err());
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn apply_decoded_patches_guards_paths() {
+        use super::Patch;
+        let dir = tmp_dir("dec-ap");
+        std::fs::create_dir_all(dir.join("res/values")).unwrap();
+        std::fs::write(dir.join("res/values/strings.xml"), "<resources/>").unwrap();
+        std::fs::write(dir.join("AndroidManifest.xml"), "<manifest/>").unwrap();
+        let patches = vec![
+            Patch {
+                entry_path: "decoded/AndroidManifest.xml".to_string(),
+                content: "<manifest ok/>".to_string(),
+            },
+            Patch {
+                entry_path: "decoded/res/values/strings.xml".to_string(),
+                content: "<resources new/>".to_string(),
+            },
+        ];
+        assert_eq!(super::apply_decoded_patches(&dir, &patches).unwrap(), 2);
+        assert_eq!(
+            std::fs::read_to_string(dir.join("AndroidManifest.xml")).unwrap(),
+            "<manifest ok/>"
+        );
+        let evil = vec![Patch {
+            entry_path: "decoded/../evil.txt".to_string(),
+            content: "x".to_string(),
+        }];
+        assert_eq!(
+            super::apply_decoded_patches(&dir, &evil).unwrap_err().code,
+            ErrorCode::InvalidInput
+        );
+        let build = vec![Patch {
+            entry_path: "decoded/build/secret".to_string(),
+            content: "x".to_string(),
+        }];
+        assert_eq!(
+            super::apply_decoded_patches(&dir, &build).unwrap_err().code,
+            ErrorCode::InvalidInput
+        );
+        let missing = vec![Patch {
+            entry_path: "decoded/res/nope.xml".to_string(),
+            content: "x".to_string(),
+        }];
+        assert_eq!(
+            super::apply_decoded_patches(&dir, &missing)
+                .unwrap_err()
+                .code,
+            ErrorCode::JobNotFound
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn split_decoded_patches_partition() {
+        use super::Patch;
+        let all = vec![
+            Patch {
+                entry_path: "assets/a.txt".to_string(),
+                content: "1".to_string(),
+            },
+            Patch {
+                entry_path: "decoded/AndroidManifest.xml".to_string(),
+                content: "m".to_string(),
+            },
+        ];
+        let (dec, zip) = super::split_decoded_patches(&all);
+        assert_eq!(dec.len(), 1);
+        assert_eq!(zip.len(), 1);
     }
 
     #[test]
