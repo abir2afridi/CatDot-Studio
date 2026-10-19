@@ -83,6 +83,25 @@
   palette installs and the Device logs tab; core gained a pure, unit-tested
   `pick_device` (ready-first, typed honest errors). `cargo test -p catdot-core`
   now **79 tests**; registry **33 features** (`device-explorer`).
+- **Decode pipeline landed 2026-10-19 (later same day)**: the #1 modding
+  blocker closed — **binary resources are now editable**. apktool 3.0.3 is
+  pinned + sha256-verified in `toolchain/manifest.json` (jar kept out of Git:
+  `.gitignore` covers `toolchain/downloads/`). New core modules:
+  `tools::decode_tools` (decode/rebuild adapters + apktool-3.0.3
+  emptypackageName workaround written straight into decode), and
+  `tools::edit_ops` (pure label/permission/version transforms, 7 tests).
+  The **heart-of-product test** proves the full round trip on a real APK:
+  decode → rename label to "CatForge X" → apktool b → zipalign → apksigner →
+  verify → `aapt2 dump badging` prints `application-label:'CatForge X'`.
+  Structured ops exposed over IPC (`apk_decode`, `apk_set_label` handles
+  string references like `@string/app_name`, `apk_toggle_permission`,
+  `apk_set_version`) and in Guided Mode step 3 (three recipe forms).
+  **Manifest analyzer** (Phase 2 exit): `tools::inspect_tools` parses real
+  `aapt2 dump xmltree` output (fixture captured from a pipeline-built APK);
+  `apk_manifest` IPC + new bottom-panel **Manifest** tab shows package, label,
+  versions, SDK, permissions and components. `cargo test -p catdot-core` =
+  **104 tests**; registry **34 features** (`decode-apk-tools`,
+  `manifest-analyzer`→real, `guided-edit-flow`→real).
 - Open risks: apk-reverse 404 still unresolved (REFERENCE_ANALYSIS.md), Java 25
   vs JDK 17 pin (works today), i18next peer-dep warning.
 - Build state: **installers rebuilt 2026-10-18 (Device Explorer follow-up; previous

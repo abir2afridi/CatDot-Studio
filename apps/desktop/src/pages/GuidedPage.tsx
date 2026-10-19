@@ -1,7 +1,7 @@
 // Guided Mode (Part X1/X6, Phase 1 shell): a linear task list whose each
 // step reflects the real workspace state. Steps that need not-yet-real
-// features (decode, device install) show an honest "Planned · Phase N"
-// badge and are not clickable — never fake progression.
+// features show an honest "Planned · Phase N" badge and are not clickable —
+// never fake progression. s3 now runs REAL structured ops (decode pipeline).
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { apkBuildSign, deviceInstallSigned } from "../lib/apk";
@@ -10,6 +10,7 @@ import { useProjectStage, type Stage } from "../lib/project-stage";
 import { useImportApk } from "../hooks/useImportApk";
 import { useUi } from "../state/ui";
 import { PlannedBadge } from "../components/PlannedBadge";
+import { GuidedEditForm } from "../components/GuidedEditForm";
 
 type StepStatus = "done" | "current" | "todo" | "planned";
 
@@ -20,7 +21,7 @@ interface StepDef {
   /** stage at which this step is "done" (index in STEP_ORDER) */
   doneAt: number;
   /** optional real action button */
-  action?: "openApk" | "buildSign" | "openExplorer" | "install";
+  action?: "openApk" | "buildSign" | "openExplorer" | "install" | "openManifest" | "editPages";
   /** honest phase badge when the underlying feature is not real yet */
   plannedPhase?: number;
 }
@@ -30,8 +31,8 @@ const STEP_ORDER: Stage[] = ["none", "imported", "edited", "built", "signed"];
 const STEPS: StepDef[] = [
   { id: "import", titleKey: "guided.s1", descKey: "guided.s1desc", doneAt: 0, action: "openApk" },
   { id: "inspect", titleKey: "guided.s2", descKey: "guided.s2desc", doneAt: 1, action: "openExplorer" },
-  { id: "edit", titleKey: "guided.s3", descKey: "guided.s3desc", doneAt: 2 },
-  { id: "manifest", titleKey: "guided.s4", descKey: "guided.s4desc", doneAt: 2, plannedPhase: 3 },
+  { id: "edit", titleKey: "guided.s3", descKey: "guided.s3desc", doneAt: 2, action: "editPages" },
+  { id: "manifest", titleKey: "guided.s4", descKey: "guided.s4desc", doneAt: 2, action: "openManifest" },
   { id: "build", titleKey: "guided.s5", descKey: "guided.s5desc", doneAt: 3, action: "buildSign" },
   { id: "install", titleKey: "guided.s6", descKey: "guided.s6desc", doneAt: 4, action: "install" },
 ];
@@ -151,6 +152,23 @@ export function GuidedPage() {
                       >
                         {buildMut.isPending ? t("explorer.building") : t("explorer.buildSign")}
                       </button>
+                    )}
+                    {s.action === "openManifest" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          useUi.getState().setActiveBottomTab("manifest");
+                          if (!useUi.getState().bottomOpen) useUi.getState().toggleBottom();
+                        }}
+                        className="rounded-md bg-accent/20 px-3 py-1.5 text-xs text-accent hover:bg-accent/30"
+                      >
+                        {t("guided.openManifest")}
+                      </button>
+                    )}
+                    {s.action === "editPages" && (
+                      <div className="mt-2">
+                        <GuidedEditForm />
+                      </div>
                     )}
                     {s.action === "install" && (
                       <button

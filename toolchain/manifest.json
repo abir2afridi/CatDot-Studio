@@ -1,27 +1,30 @@
 {
   "version": 1,
-  "note": "Pinned toolchain versions + SHA-256 (Part C + R). Phase 0: detected local versions; pinned downloads land in Phase 4 with checksums and license texts.",
+  "note": "Pinned toolchain versions + SHA-256 (Part C + R). apktool pin is verified by an executed download + hash in this repo (2026-10-19). jadx/temurin stay unpinned until their downloads are executed + hashed (network was too slow for the 69 MB jadx zip this session).",
   "pins": [
     {
       "id": "temurin-jre-17",
       "version": "17.0.11+9",
       "sha256": "TBD-PHASE4",
       "url": "TBD-PHASE4",
-      "license": "GPLv2 with Classpath Exception (to be confirmed from pinned build)"
+      "license": "GPLv2 with Classpath Exception (to be confirmed from pinned build)",
+      "note": "A system JRE/JDK 17+ (detected in System check) always takes precedence; this pin is only a fallback."
     },
     {
       "id": "apktool",
-      "version": "TBD-PHASE4",
-      "sha256": "TBD-PHASE4",
-      "url": "TBD-PHASE4",
-      "license": "Apache-2.0 (to be confirmed from pinned release)"
+      "version": "3.0.3",
+      "sha256": "dbf930b076c6b9be08d57c449cacefc3bdd6b71ebd59b3066fc0e1f5b14f9423",
+      "url": "https://github.com/iBotPeaches/Apktool/releases/download/v3.0.3/apktool_3.0.3.jar",
+      "license": "Apache-2.0",
+      "note": "Executed download verified: 15,478,013 bytes, sha256 matches, runs via system JDK 25 (java -jar)."
     },
     {
       "id": "jadx",
-      "version": "TBD-PHASE4",
+      "version": "1.5.6",
       "sha256": "TBD-PHASE4",
-      "url": "TBD-PHASE4",
-      "license": "Apache-2.0 (to be confirmed from pinned release)"
+      "url": "https://github.com/skylot/jadx/releases/download/v1.5.6/jadx-1.5.6.zip",
+      "license": "Apache-2.0",
+      "note": "URL + version confirmed from the GitHub release API; sha256 not computed yet (69 MB download did not finish this session)."
     }
   ],
   "compatibility": [

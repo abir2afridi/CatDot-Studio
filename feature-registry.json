@@ -10,7 +10,7 @@
     },
     {
       "id": "security-policy",
-      "title": "Policy engine (access levels ÃƒÆ’Ã¢â‚¬â€ risk tiers)",
+      "title": "Policy engine (access levels ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â risk tiers)",
       "phase": 0,
       "status": "real",
       "evidence": ["cargo test -p catdot-core security::policy"]
@@ -66,7 +66,7 @@
     },
     {
       "id": "ts-rs-type-gen",
-      "title": "IPC type generation (ts-rs ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ shared-types)",
+      "title": "IPC type generation (ts-rs ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ shared-types)",
       "phase": 0,
       "status": "real",
       "evidence": ["cargo test -p catdot-core export_bindings", "pnpm typecheck"]
@@ -146,21 +146,21 @@
       "title": "System check UI (real toolchain detect)",
       "phase": 0,
       "status": "real",
-      "evidence": ["apps/desktop SystemCheck page ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ toolchain_detect IPC"]
+      "evidence": ["apps/desktop SystemCheck page ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ toolchain_detect IPC"]
     },
     {
       "id": "system-logs",
       "title": "System Logs panel (real error capture + copy)",
       "phase": 0,
       "status": "real",
-      "evidence": ["cargo test -p catdot-core logs", "apps/desktop Dashboard ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ logs_recent / log://entry"]
+      "evidence": ["cargo test -p catdot-core logs", "apps/desktop Dashboard ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ logs_recent / log://entry"]
     },
     {
       "id": "ai-streaming-ui",
       "title": "AI connect + streaming chat UI (real)",
       "phase": 0,
       "status": "real",
-      "evidence": ["cargo test -p catdot-core ai::openai_compat", "apps/desktop AiChat page ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ ai://chat events"]
+      "evidence": ["cargo test -p catdot-core ai::openai_compat", "apps/desktop AiChat page ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ ai://chat events"]
     },
     {
       "id": "i18n-skeleton",
@@ -193,10 +193,10 @@
     },
     {
       "id": "import-inspect",
-      "title": "Import & inspect (F1ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“F3): drag-drop import, ZIP entry tree, SHA-256, entry preview",
+      "title": "Import & inspect (F1ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œF3): drag-drop import, ZIP entry tree, SHA-256, entry preview",
       "phase": 2,
       "status": "real",
-      "evidence": ["cargo test -p catdot-core workspace", "apps/desktop Explorer ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ apk_import/apk_report IPC"]
+      "evidence": ["cargo test -p catdot-core workspace", "apps/desktop Explorer ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ apk_import/apk_report IPC"]
     },
     {
       "id": "manual-edits",
@@ -207,25 +207,42 @@
     },
     {
       "id": "build-sign-verify",
-      "title": "Build ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ align ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ sign ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ verify (F5) via zipalign/apksigner/keytool",
+      "title": "Build ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ align ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ sign ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ verify (F5) via zipalign/apksigner/keytool",
       "phase": 2,
       "status": "real",
-      "evidence": ["cargo test -p catdot-core tools::build_tools", "apps/desktop Explorer ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ apk_build_sign IPC"]
+      "evidence": ["cargo test -p catdot-core tools::build_tools", "apps/desktop Explorer ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ apk_build_sign IPC"]
     },
     {
       "id": "decode-apk-tools",
-      "title": "apktool/JADX decompile ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ smali/AXML editing (requires tools installed)",
+      "title": "apktool decode/rebuild pipeline (binary resources become editable)",
       "phase": 3,
-      "status": "disabled-planned",
-      "evidence": [],
-      "reason": "apktool and jadx are not installed on this machine; text editing covers XML/assets/smali only when provided by the user"
+      "status": "real",
+      "evidence": [
+        "cargo test -p catdot-core decode_tools::tests::rename_label_rebuild_sign_verify_round_trip (decode, patch, apktool b, zipalign, apksigner, badging print: CatForge X)",
+        "cargo test -p catdot-core workspace::tests::apply_decoded_patches_guards_paths",
+        "apps/desktop apk_decode/apk_set_label/apk_toggle_permission/apk_set_version IPC; guided recipes UI",
+        "toolchain/manifest.json pins apktool 3.0.3 (sha256 dbf930b076c6b9be08d57c449cacefc3bdd6b71ebd59b3066fc0e1f5b14f9423)"
+      ]
+    },
+    {
+      "id": "manifest-analyzer",
+      "title": "Structured manifest analysis via aapt2 dump xmltree (no decode)",
+      "phase": 2,
+      "status": "real",
+      "evidence": [
+        "cargo test -p catdot-core inspect_tools::tests (real fixture + components/permissions parse)",
+        "apps/desktop apk_manifest IPC + BottomPanel Manifest tab"
+      ]
     },
     {
       "id": "guided-edit-flow",
       "title": "Guided multi-step edit flow with checkpoints",
       "phase": 3,
-      "status": "disabled-planned",
-      "evidence": []
+      "status": "real",
+      "evidence": [
+        "GuidedPage s1-s6 wired to real stages; s3 structured recipes (apk_set_label/apk_toggle_permission/apk_set_version); checkpoint engine tested",
+        "cargo test -p catdot-core checkpoint round-trip; docs/EVIDENCE/phase-3-checkpoints-device.md"
+      ]
     },
     {
       "id": "ai-agent",
@@ -236,3 +253,4 @@
     }
   ]
 }
+

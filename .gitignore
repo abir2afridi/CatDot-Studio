@@ -45,3 +45,5 @@ Desktop.ini
 # packages/shared-types/src/generated and ARE committed)
 crates/*/bindings/
 crates/packages/
+
+toolchain/downloads/
