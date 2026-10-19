@@ -26,7 +26,7 @@ pub struct ExportResult {
     pub size: u64,
 }
 
-/// Workspace status for the status bar / dashboard.
+/// Workspace status for the status bar / H2 dashboard cards.
 #[derive(Debug, Clone, Default, Serialize, TS)]
 #[ts(export)]
 pub struct ApkStatus {
@@ -34,4 +34,8 @@ pub struct ApkStatus {
     pub pending_edits: usize,
     pub exported_apk: Option<String>,
     pub signed_apk: Option<String>,
+    /// Protected in-workspace copy of the original APK (never modified).
+    pub original_apk: Option<String>,
+    /// Absolute workspace directory (outputs, patches.json live here).
+    pub workspace_dir: String,
 }

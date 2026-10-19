@@ -324,6 +324,8 @@ pub fn apk_status(
         pending_edits: pending,
         exported_apk: opt_file(&ws.join("exported.apk")),
         signed_apk: opt_file(&ws.join("signed.apk")),
+        original_apk: opt_file(&ws.join("original.apk")),
+        workspace_dir: ws.to_string_lossy().into_owned(),
     })
 }
 

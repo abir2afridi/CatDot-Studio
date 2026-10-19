@@ -3,7 +3,7 @@
 // per-file unsaved drafts, and the IDE layout (sidebar/bottom panel).
 import { create } from "zustand";
 
-export type Page = "explorer" | "ai" | "system" | "settings";
+export type Page = "guided" | "explorer" | "ai" | "system" | "settings";
 export type BottomTab = "logs" | "build" | "diff" | "problems";
 import type { BuildReport } from "@catdot/shared-types";
 

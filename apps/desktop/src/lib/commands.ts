@@ -3,10 +3,11 @@
 // Mutation commands surface their structured result in a status-bar notice.
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apkExport, apkBuildSign, apkImport, apkRevertAll } from "./apk";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apkExport, apkBuildSign, apkImport, apkRevertAll, apkStatus } from "./apk";
 import { pickApkPath } from "./pick";
 import { IpcError } from "./ipc";
+import { revealPath } from "./opener";
 import { useUi, type PaletteCommand } from "../state/ui";
 
 const describe = (e: unknown): string =>
@@ -101,6 +102,21 @@ export function useCommands(): PaletteCommand[] {
     onError: (e) => setNotice({ text: describe(e), ok: false }),
   });
 
+  // Reveal-in-folder targets (real workspace files only).
+  const status = useQuery({ queryKey: ["apk", "status"], queryFn: apkStatus, staleTime: 5_000 });
+  const revealOriginal = useCallback(() => {
+    const p = status.data?.original_apk;
+    if (p != null) {
+      void revealPath(p).catch((e) => setNotice({ text: describe(e), ok: false }));
+    }
+  }, [status.data, setNotice]);
+  const revealSigned = useCallback(() => {
+    const p = status.data?.signed_apk;
+    if (p != null) {
+      void revealPath(p).catch((e) => setNotice({ text: describe(e), ok: false }));
+    }
+  }, [status.data, setNotice]);
+
   const pickAndImport = useCallback(() => {
     void pickApkPath(t("explorer.openApk")).then((p) => {
       if (p != null) importMut.mutate(p);
@@ -114,6 +130,7 @@ export function useCommands(): PaletteCommand[] {
     () =>
       listOf(
         [
+          { id: "view.guided", titleKey: "cmd.goGuided", run: () => setPage("guided") },
           { id: "view.explorer", titleKey: "cmd.goExplorer", run: () => setPage("explorer") },
           { id: "view.ai", titleKey: "cmd.goAi", run: () => setPage("ai") },
           { id: "view.system", titleKey: "cmd.goSystem", run: () => setPage("system") },
@@ -133,6 +150,19 @@ export function useCommands(): PaletteCommand[] {
           { id: "apk.export", titleKey: "cmd.exportApk", run: () => exportMut.mutate() },
           { id: "apk.build", titleKey: "cmd.buildSign", run: () => buildMut.mutate() },
           { id: "apk.revertAll", titleKey: "cmd.revertAll", run: () => revertAllMut.mutate() },
+          {
+            id: "apk.revealOriginal",
+            titleKey: "cmd.revealOriginal",
+            disabledReason:
+              status.data?.original_apk == null ? t("cmd.noOriginal") : undefined,
+            run: () => revealOriginal(),
+          },
+          {
+            id: "apk.revealSigned",
+            titleKey: "cmd.revealSigned",
+            disabledReason: status.data?.signed_apk == null ? t("cmd.noSigned") : undefined,
+            run: () => revealSigned(),
+          },
           {
             id: "editor.save",
             titleKey: "cmd.saveTab",
@@ -164,6 +194,10 @@ export function useCommands(): PaletteCommand[] {
       requestSave,
       closeFile,
       nothingKey,
+      revealOriginal,
+      revealSigned,
+      status.data?.original_apk,
+      status.data?.signed_apk,
     ],
   );
 }

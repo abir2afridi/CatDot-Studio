@@ -9,6 +9,7 @@ import { StatusBar } from "./components/StatusBar";
 import { SystemCheckPage } from "./pages/SystemCheckPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { AiChatPage } from "./pages/AiChatPage";
+import { GuidedPage } from "./pages/GuidedPage";
 import { useUi } from "./state/ui";
 import { useShortcuts } from "./hooks/useShortcuts";
 import { settingsGet } from "./lib/ipc";
@@ -17,6 +18,8 @@ import i18n from "./i18n";
 function MainContent() {
   const page = useUi((s) => s.page);
   switch (page) {
+    case "guided":
+      return <GuidedPage />;
     case "ai":
       return <AiChatPage />;
     case "system":

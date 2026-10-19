@@ -5,6 +5,8 @@ import { apkOpenEntry, apkRevertEntry, apkSaveEntry } from "../lib/apk";
 import { IpcError } from "../lib/ipc";
 import { useUi } from "../state/ui";
 import { MonacoEntry } from "./MonacoEntry";
+import { ProjectMap } from "./ProjectMap";
+import { WelcomeCards } from "./WelcomeCards";
 
 export function EditorArea() {
   const openFiles = useUi((s) => s.openFiles);
@@ -24,10 +26,12 @@ export function EditorArea() {
 function Welcome() {
   const { t } = useTranslation();
   return (
-    <div className="flex h-full items-center justify-center bg-bg">
-      <div className="max-w-md text-center text-text-dim">
-        <p className="mb-2 text-2xl font-semibold text-text">{t("common.appName")}</p>
-        <p>{t("editor.welcome")}</p>
+    <div className="h-full overflow-y-auto bg-bg p-4">
+      <div className="mx-auto max-w-3xl space-y-3">
+        <p className="text-2xl font-semibold">{t("common.appName")}</p>
+        <p className="text-sm text-text-dim">{t("editor.welcome")}</p>
+        <ProjectMap />
+        <WelcomeCards />
       </div>
     </div>
   );

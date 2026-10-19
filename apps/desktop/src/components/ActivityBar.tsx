@@ -3,6 +3,9 @@ import { useUi, type Page } from "../state/ui";
 
 // Monochrome 16x16 inline SVG icons (billboard material set uses text).
 const icons: Record<Page, React.ReactNode> = {
+  guided: (
+    <path d="M8 1.5 1 4.8l7 3.3 7-3.3L8 1.5ZM3 7.4v3.3c0 .7 2.2 2.3 5 2.3s5-1.6 5-2.3V7.4l-5 2.4-5-2.4Zm10.5 1V12h-1.6V8.6l1.6-.6Z" />
+  ),
   explorer: (
     <path d="M10.5 2H2v12h12V5.5L10.5 2ZM8 3v3h5v1H8V3Zm5 10H3V3h3v5h7v5Z" />
   ),
@@ -23,6 +26,7 @@ interface Item {
 }
 
 const items: Item[] = [
+  { id: "guided", labelKey: "nav.guided" },
   { id: "explorer", labelKey: "nav.explorer" },
   { id: "ai", labelKey: "nav.ai" },
   { id: "system", labelKey: "nav.system" },
