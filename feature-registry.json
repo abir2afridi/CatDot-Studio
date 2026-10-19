@@ -261,6 +261,39 @@
         "apps/desktop TerminalPanel.tsx: xterm.js sessions, new-terminal (+), per-tab close (×), tab switching, resize observer fit",
         "cargo check desktop clean; pnpm typecheck/lint/test green this session"
       ]
+    },
+    {
+      "id": "vscode-menu-bar",
+      "title": "VS Code-style menu bar (File/Edit/Selection/View/Go/Run/Terminal/Help) over real commands, Monaco actions, panel tabs and window controls",
+      "phase": 3,
+      "status": "real",
+      "evidence": [
+        "apps/desktop MenuBar.tsx: menus built from the live command registry (useCommands), editor-bridge Monaco actions (undo/redo/find/select/copy/paste), bottom-panel tab switching, theme toggle with settings persistence, About dialog via @tauri-apps/api getVersion, real window close",
+        "Ctrl+` new-terminal shortcut → ui.newTerminal() → TerminalPanel request handshake; disabled items always carry an honest reason (no fake entries)",
+        "pnpm typecheck/lint/test green this session"
+      ]
+    },
+    {
+      "id": "monaco-offline-editor",
+      "title": "Entry editor renders instantly: self-hosted Monaco configured at import time (no CDN, offline-safe)",
+      "phase": 3,
+      "status": "real",
+      "evidence": [
+        "apps/desktop lib/monaco.ts: loader.config({ monaco }) runs at module import; @monaco-editor/react never falls back to the blocked CDN (root cause of tabs stuck on Loading…)",
+        "apps/desktop MonacoEntry.tsx: editor registered in editor-bridge on mount, unregistered on dispose; i18n mojibake repaired (loading/building/…) so editor chrome renders clean text",
+        "pnpm typecheck/lint/test green this session"
+      ]
+    },
+    {
+      "id": "workspace-session-reattach",
+      "title": "App restart re-attaches the imported workspace (Explorer, editor and recipes keep working)",
+      "phase": 3,
+      "status": "real",
+      "evidence": [
+        "apps/desktop apk_commands.rs apk_reopen: recomputes original.apk sha256 and reloads patches.json when the in-memory session is empty; registered in lib.rs",
+        "App.tsx startup effect calls apkReopen(); failures surface as a status-bar notice (no swallowed errors)",
+        "cargo check desktop clean; pnpm typecheck/lint green this session"
+      ]
     }
   ]
 }

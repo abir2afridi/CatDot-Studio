@@ -1,5 +1,5 @@
 ﻿// Manifest analyzer tab (Phase 2 slice): real `aapt2 dump xmltree` output,
-// parsed by the Rust core â€” package, label, versions, permissions, components.
+// parsed by the Rust core — package, label, versions, permissions, components.
 // Read-only: editing happens via the structured ops in Guided/Palette.
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -36,10 +36,10 @@ export function ManifestTab() {
   return (
     <div data-testid="manifest-view" className="h-full overflow-y-auto px-3 py-2 text-xs leading-5">
       <dl className="mb-2 grid grid-cols-[auto,1fr] gap-x-3">
-        <Kv k={t("manifest.package")} v={info.package ?? "â€”"} />
-        <Kv k={t("manifest.label")} v={info.label ?? "â€”"} />
+        <Kv k={t("manifest.package")} v={info.package ?? "—"} />
+        <Kv k={t("manifest.label")} v={info.label ?? "—"} />
         <Kv k={t("manifest.version")} v={`${info.version_code ?? "?"} (${info.version_name ?? "?"})`} />
-        <Kv k={t("manifest.sdk")} v={`${t("manifest.minSdk")} ${info.min_sdk ?? "?"} Â· ${t("manifest.targetSdk")} ${info.target_sdk ?? "?"}`} />
+        <Kv k={t("manifest.sdk")} v={`${t("manifest.minSdk")} ${info.min_sdk ?? "?"} · ${t("manifest.targetSdk")} ${info.target_sdk ?? "?"}`} />
       </dl>
       <section className="mb-2">
         {/* permissions sorted; count chip in the section head like the tree */}
@@ -68,11 +68,11 @@ export function ManifestTab() {
               <li key={`${c.kind}-${c.name ?? i}`} className="px-1 py-0.5">
                 <span className="text-accent">{c.kind}</span>{" "}
                 <span className="break-all">{c.name ?? "?"}</span>
-                {c.exported === "true" && <span className="text-warning"> Â· {t("manifest.exported")}</span>}
+                {c.exported === "true" && <span className="text-warning"> · {t("manifest.exported")}</span>}
                 {(c.actions.length > 0 || c.categories.length > 0) && (
                   <span className="text-text-dim">
                     {" "}
-                    Â· {[...c.actions, ...c.categories].join(", ")}
+                    · {[...c.actions, ...c.categories].join(", ")}
                   </span>
                 )}
               </li>

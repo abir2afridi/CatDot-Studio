@@ -4,6 +4,7 @@
 import { Editor, type OnMount, type Monaco } from "@monaco-editor/react";
 import { useTranslation } from "react-i18next";
 import { getMonaco, monacoLanguage, monacoTheme, monaco } from "../lib/monaco";
+import { getActiveEditor, setActiveEditor } from "../lib/editor-bridge";
 import { useUi } from "../state/ui";
 
 interface Props {
@@ -26,6 +27,10 @@ export function MonacoEntry({ entryPath, content }: Props) {
   const setDraft = useUi((s) => s.setDraft);
 
   const onMount: OnMount = (editor) => {
+    setActiveEditor(editor);
+    editor.onDidDispose(() => {
+      if (getActiveEditor() === editor) setActiveEditor(null);
+    });
     trackCaret(editor);
   };
 

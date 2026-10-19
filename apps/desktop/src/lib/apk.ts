@@ -1,5 +1,5 @@
-﻿// Typed IPC wrappers for the APK pipeline (Part F1â€“F5): import â†’ edit â†’
-// export â†’ sign, checkpoints (F4) and device steps (F7).
+﻿// Typed IPC wrappers for the APK pipeline (Part F1–F5): import → edit →
+// export → sign, checkpoints (F4) and device steps (F7).
 import type {
   ApkReport,
   ApkStatus,
@@ -15,6 +15,9 @@ import { call } from "./ipc";
 
 export const apkImport = (sourcePath: string) =>
   call<ApkReport>("apk_import", { sourcePath });
+
+/** Re-attach the on-disk workspace session after an app restart. */
+export const apkReopen = () => call<boolean>("apk_reopen");
 
 export const apkManifest = () => call<ManifestInfo>("apk_manifest");
 

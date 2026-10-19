@@ -89,7 +89,7 @@ fn workspace_root(app: &AppHandle) -> Result<PathBuf, AppError> {
     Ok(ws)
 }
 
-/// User pressed the button â‡’ the confirmation is real; only `Deny` blocks.
+/// User pressed the button ⇒ the confirmation is real; only `Deny` blocks.
 fn require_allow(level: AccessLevel, tier: RiskTier) -> Result<(), AppError> {
     let d = check(level, Autonomy::ConfirmEach, tier, true, false);
     match d {
@@ -191,6 +191,26 @@ pub fn apk_report(apk_state: State<'_, ApkState>) -> Result<ApkReport, AppError>
     let g = apk_lock(&apk_state)?;
     let s = g.as_ref().ok_or_else(no_session_err)?;
     report_of(&s.ws_root.join("original.apk"), "original.apk")
+}
+
+/// Re-attach the session after an app restart when a workspace exists on disk.
+/// Without this, the Explorer tree (read from original.apk) and the editor
+/// disagreed: opening a file after restart failed with "no APK imported".
+#[tauri::command]
+pub fn apk_reopen(
+    app: AppHandle,
+    apk_state: State<'_, ApkState>,
+) -> Result<bool, AppError> {
+    let ws_root = workspace_root(&app)?;
+    let orig = ws_root.join("original.apk");
+    let mut g = apk_lock(&apk_state)?;
+    if g.is_some() || !orig.is_file() {
+        return Ok(g.is_some());
+    }
+    let base_sha = catdot_core::workspace::sha256_file(&orig)?;
+    let patches = load_patches(&ws_root, &base_sha);
+    *g = Some(ApkSession { ws_root, base_sha, patches });
+    Ok(true)
 }
 
 /// Open one entry (patched content wins if an edit is pending).

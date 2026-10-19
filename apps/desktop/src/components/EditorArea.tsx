@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { apkOpenEntry, apkRevertEntry, apkSaveEntry } from "../lib/apk";
 import { IpcError } from "../lib/ipc";
 import { useUi } from "../state/ui";
+import { entryIcon } from "./Explorer";
 import { MonacoEntry } from "./MonacoEntry";
 import { ProjectMap } from "./ProjectMap";
 import { WelcomeCards } from "./WelcomeCards";
@@ -54,16 +55,21 @@ function TabStrip() {
       {openFiles.map((path) => {
         const active = path === activeFile;
         const dirty = drafts[path] != null;
+        const icon = entryIcon(leafName(path), false);
         return (
           <div
             key={path}
-            className={`group flex max-w-[240px] items-center gap-1 border-r border-border px-3 py-1.5 text-xs ${
-              active ? "bg-bg text-text" : "text-text-dim hover:bg-surface-2"
+            className={`group flex max-w-[240px] items-center gap-1.5 border-r border-border px-3 py-1.5 text-xs ${
+              active
+                ? "border-t border-t-accent bg-bg text-text"
+                : "border-t border-t-transparent text-text-dim hover:bg-surface-2"
             }`}
             role="tab"
             aria-selected={active}
           >
-            <span aria-hidden="true" className="w-1 rounded-full bg-accent/0" />
+            <span aria-hidden="true" className={`shrink-0 font-mono ${icon.className}`}>
+              {icon.glyph}
+            </span>
             <button
               type="button"
               title={path}
@@ -73,7 +79,11 @@ function TabStrip() {
               {leafName(path)}
             </button>
             {dirty && (
-              <span aria-label={t("editor.unsaved")} title={t("editor.unsaved")} className="text-accent">
+              <span
+                aria-hidden="true"
+                title={t("editor.unsaved")}
+                className="text-accent group-hover:hidden"
+              >
                 ●
               </span>
             )}
@@ -82,7 +92,9 @@ function TabStrip() {
               aria-label={t("editor.closeTabTitle")}
               title={t("editor.closeTabTitle")}
               onClick={() => closeFile(path)}
-              className="text-text-dim opacity-0 hover:text-text group-hover:opacity-100"
+              className={`text-text-dim hover:text-text group-hover:opacity-100 ${
+                active && !dirty ? "opacity-70" : "opacity-0"
+              }`}
             >
               ✕
             </button>

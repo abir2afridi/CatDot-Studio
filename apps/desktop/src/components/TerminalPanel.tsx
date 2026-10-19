@@ -8,6 +8,7 @@ import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 import type { TermInfo } from "@catdot/shared-types";
 import { onTermExit, onTermOut, termClose, termResize, termSpawn, termWrite, IpcError } from "../lib/ipc";
+import { useUi } from "../state/ui";
 
 interface TermTab {
   id: number;
@@ -28,6 +29,9 @@ export function TerminalPanel() {
   const sessions = useRef<Map<number, Session>>(new Map());
   const hostRef = useRef<HTMLDivElement | null>(null);
   const activeKey = activeId == null ? "none" : String(activeId);
+  const terminalRequest = useUi((s) => s.terminalRequest);
+  const terminalRequestHandled = useUi((s) => s.terminalRequestHandled);
+  const markTerminalRequestHandled = useUi((s) => s.markTerminalRequestHandled);
 
   const spawn = useCallback(async () => {
     setErr(null);
@@ -53,6 +57,15 @@ export function TerminalPanel() {
       return next;
     });
   }, []);
+
+  // Menu bar "New Terminal" (Ctrl+`) → spawn once per request, even if the
+  // panel was closed when the request was made.
+  useEffect(() => {
+    if (terminalRequest > terminalRequestHandled) {
+      markTerminalRequestHandled();
+      void spawn();
+    }
+  }, [terminalRequest, terminalRequestHandled, markTerminalRequestHandled, spawn]);
 
   // Global output/exit routing (single listener).
   useEffect(() => {

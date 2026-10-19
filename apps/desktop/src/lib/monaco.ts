@@ -48,13 +48,18 @@ globalWindow.MonacoEnvironment = {
 let configured = false;
 
 /** Configure the React wrapper to use the self-hosted monaco instance. */
-function getMonaco(): typeof monaco {
+export function getMonaco(): typeof monaco {
   if (!configured) {
     loader.config({ monaco });
     configured = true;
   }
   return monaco;
 }
+
+// CRITICAL: the wrapper resolves its loader on first mount — configure it NOW,
+// at module import time, so it never tries the default CDN (blocked offline /
+// by the app CSP, which left editors stuck on "Loading…" forever).
+getMonaco();
 
 /** Monaco theme name for the current app theme token. */
 export function monacoTheme(appTheme: "dark" | "light"): string {
@@ -70,4 +75,4 @@ export function monacoLanguage(path: string): string {
   return "plaintext";
 }
 
-export { getMonaco, monaco };
+export { monaco };

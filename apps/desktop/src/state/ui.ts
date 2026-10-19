@@ -45,6 +45,9 @@ interface UiState {
   lastBuild: BuildReport | null;
   /** Editor save-request counter (Ctrl+S / command palette → EntryEditor). */
   saveRequest: number;
+  /** Bumped by menu "New Terminal"; handled once by TerminalPanel. */
+  terminalRequest: number;
+  terminalRequestHandled: number;
   /** Command palette visibility + selected index. */
   paletteOpen: boolean;
   paletteSelected: number;
@@ -69,6 +72,8 @@ interface UiState {
   setCursor: (line: number, col: number) => void;
   setLastBuild: (r: BuildReport | null) => void;
   requestSave: () => void;
+  newTerminal: () => void;
+  markTerminalRequestHandled: () => void;
   setPaletteOpen: (open: boolean) => void;
   setPaletteSelected: (i: number) => void;
   setNotice: (n: Notice | null) => void;
@@ -96,6 +101,8 @@ export const useUi = create<UiState>((set) => ({
   cursorCol: 1,
   lastBuild: null,
   saveRequest: 0,
+  terminalRequest: 0,
+  terminalRequestHandled: 0,
   paletteOpen: false,
   paletteSelected: 0,
   notice: null,
@@ -141,6 +148,13 @@ export const useUi = create<UiState>((set) => ({
   setCursor: (cursorLine, cursorCol) => set({ cursorLine, cursorCol }),
   setLastBuild: (lastBuild) => set({ lastBuild }),
   requestSave: () => set((s) => ({ saveRequest: s.saveRequest + 1 })),
+  newTerminal: () =>
+    set((s) => ({
+      bottomOpen: true,
+      activeBottomTab: "terminal",
+      terminalRequest: s.terminalRequest + 1,
+    })),
+  markTerminalRequestHandled: () => set((s) => ({ terminalRequestHandled: s.terminalRequest })),
   setPaletteOpen: (paletteOpen) =>
     set((s) => ({ paletteOpen, paletteSelected: paletteOpen ? s.paletteSelected : 0 })),
   setPaletteSelected: (paletteSelected) => set({ paletteSelected }),

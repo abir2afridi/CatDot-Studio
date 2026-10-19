@@ -88,6 +88,7 @@ pub fn run() {
             commands::logs_recent,
             commands::logs_clear,
             apk_commands::apk_import,
+            apk_commands::apk_reopen,
             apk_commands::apk_report,
             apk_commands::apk_open_entry,
             apk_commands::apk_save_entry,

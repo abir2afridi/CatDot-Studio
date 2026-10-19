@@ -1,5 +1,5 @@
 ﻿// Guided Edit Form (Part F4 structured ops): the three "recipes" run REAL
-// decode-pipeline ops from the Rust core â€” apk_set_label (string ref or
+// decode-pipeline ops from the Rust core — apk_set_label (string ref or
 // literal), apk_toggle_permission, apk_set_version. Every success records a
 // reversible patch (Change history), every failure shows the honest message.
 import { useState } from "react";
@@ -97,7 +97,7 @@ function LabelForm({
         onClick={() => onApply(label.trim())}
         className="shrink-0 rounded-md bg-accent/20 px-2.5 py-1 text-xs text-accent hover:bg-accent/30 disabled:opacity-50"
       >
-        {busy ? "â€¦" : t("recipes.renameLabel")}
+        {busy ? "…" : t("recipes.renameLabel")}
       </button>
     </Row>
   );
@@ -137,7 +137,7 @@ function PermForm({
         }}
         className="shrink-0 rounded-md bg-accent/20 px-2.5 py-1 text-xs text-accent hover:bg-accent/30 disabled:opacity-50"
       >
-        {busy ? "â€¦" : t("recipes.permApply")}
+        {busy ? "…" : t("recipes.permApply")}
       </button>
     </Row>
   );
@@ -181,7 +181,7 @@ function VersionForm({
         }}
         className="shrink-0 rounded-md bg-accent/20 px-2.5 py-1 text-xs text-accent hover:bg-accent/30 disabled:opacity-50"
       >
-        {busy ? "â€¦" : t("recipes.versionApply")}
+        {busy ? "…" : t("recipes.versionApply")}
       </button>
     </Row>
   );

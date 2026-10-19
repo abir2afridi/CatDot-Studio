@@ -81,7 +81,7 @@ export function SettingsPage() {
     onSuccess: (caps) => {
       setStatus({
         kind: "ok",
-        msg: `${t("ai.connectionOk")} Â· streaming=${caps.streaming} tools=${caps.tools}`,
+        msg: `${t("ai.connectionOk")} · streaming=${caps.streaming} tools=${caps.tools}`,
       });
     },
     onError: (e) => {
@@ -175,7 +175,7 @@ export function SettingsPage() {
             <Input
               value={apiKey}
               type="password"
-              placeholder={hasKey ? "â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" : ""}
+              placeholder={hasKey ? "••••••••" : ""}
               onChange={setApiKey}
               mono
             />

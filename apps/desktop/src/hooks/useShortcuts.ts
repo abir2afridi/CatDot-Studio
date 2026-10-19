@@ -38,6 +38,10 @@ export function useShortcuts(): void {
           e.preventDefault();
           ui.toggleBottom();
           break;
+        case "`": // VS Code: Ctrl+` opens a new integrated terminal
+          e.preventDefault();
+          ui.newTerminal();
+          break;
         case "s": // save active tab (only when a draft is dirty)
           if (isEditable(e.target)) {
             e.preventDefault();

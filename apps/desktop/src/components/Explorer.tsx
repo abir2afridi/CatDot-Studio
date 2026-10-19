@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useTranslation } from "react-i18next";
-import { apkExport, apkBuildSign, apkImport, apkReport, apkRevertAll, apkPatchSummary } from "../lib/apk";
+import { apkExport, apkBuildSign, apkImport, apkReopen, apkReport, apkRevertAll, apkPatchSummary } from "../lib/apk";
 import { pickApkPath } from "../lib/pick";
 import { IpcError } from "../lib/ipc";
 import { useUi } from "../state/ui";
@@ -98,7 +98,12 @@ export function Explorer() {
 
   const report = useQuery({
     queryKey: ["apk", "report"],
-    queryFn: apkReport,
+    // Cold start: re-attach the on-disk workspace first so the report never
+    // races the session restore (cheap no-op when a session already exists).
+    queryFn: async () => {
+      await apkReopen();
+      return apkReport();
+    },
     retry: false,
   });
 
