@@ -17,10 +17,10 @@ Honest per-feature gap analysis against `docs/MASTER_PROMPT.md` / `docs+/pland.m
 
 | Feature | Today | Next improvement (pland ref) | Phase |
 |---|---|---|---|
-| app-shell / ide-shell-x1 | Regions live: ActivityBar, Explorer, editor tabs, DiffTab, bottom Logs/Build/Diff, StatusBar, palette, layout persistence, shortcuts | Split-editor, find/replace, read-only binary handling, virtualized tree, context menus, IDE menus (X1) | 2 |
-| import-inspect | Import (picker/drag/palette), entry tree, report, export, pending-edit count | H2 Original-APK card (path/SHA-256/sizes/entry classes) + Interactive APK Anatomy from real entries (H2, Y7) | 3 |
+| app-shell / ide-shell-x1 / guided-mode-shell | Regions live: ActivityBar (incl. Guided Mode top entry), Explorer, editor tabs, DiffTab, bottom Logs/Build/Diff, StatusBar, palette, layout persistence, shortcuts, H2 Project Map + Original/Outputs cards with reveal-in-folder | Split-editor, find/replace, read-only binary handling, virtualized tree, context menus, IDE menus (X1) | 2 |
+| import-inspect | Import (picker/drag/palette), entry tree, report, export, pending-edit count | ~~H2 Original-APK card~~ done 2026-10-18 (card + Project Map + reveal). Next: Interactive APK Anatomy from real entries (Y7) | 3 |
 | manual-edits | Compressed-entry editor: Monaco, drafts, safe re-store, revert single/all, Diff tab | Patch manager + checkpoints (auto before dangerous ops), before/after structured diff persistence (F4, H4) | 3 |
-| build-sign-verify | zipalign→apksigner via debug.keystore, aligned/signature verified, statuses | Output card with "Reveal in folder", signed-apk SHA, install-then-test flow (H2, H3 step 7) | 4 |
+| build-sign-verify | zipalign→apksigner via debug.keystore, aligned/signature verified, statuses | ~~Output card + Reveal in folder~~ done 2026-10-18 (cards + opener plugin). Next: install-then-test flow (H3 step 7) | 4 |
 | system-logs | Bottom Logs tab: ring buffer + events, filter, copy, clear | Problems tab fed by the F6 error map; click-to-open file locations (X1 bottom tabs) | 4 |
 | ai-provider-trait / ai-openai-compat / ai-streaming-ui | Provider CRUD, key in Credential Manager, test connection, streaming chat | Agent modes (Ask/Plan/Assisted/Agent, X2), tool timeline, approval gate, patch.proposed events (G, X3) | 5 |
 | toolchain-detect | Read-only detection of build-tools/zipalign/apksigner | Self-service install with license consent (Part R), "Needs apktool → Fix in Toolchain" deep links (X1 palette) | 4 |

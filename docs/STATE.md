@@ -50,13 +50,25 @@
   build-steps list (Build tab owns it). Repo URL corrected to
   `github.com/abir2afridi/CatDot-Studio` per the master spec. Honest
   per-feature next-improvement map: `docs/FEATURE_IMPROVEMENTS.md`.
+- **H2 cards + Project Map + Guided Mode shell landed 2026-10-18** (Phase 1
+  exit items): welcome view now shows a Project Map strip (Import→Edit→
+  Export→Sign→Install, all state-derived, single next-step coach) plus
+  Original-APK (read-only badge, SHA-256, size, entries, pending edits) and
+  Build-outputs cards; "Reveal in folder" works via `tauri-plugin-opener`
+  (only `opener:allow-reveal-item-in-dir` granted). Activity bar gained a
+  top-level Guided Mode entry (graduation-cap icon) whose task list mirrors
+  the same real state — decode/manifest and device-install steps carry
+  honest "Planned · Phase N" badges. `ApkStatus` grew `original_apk` +
+  `workspace_dir`. Palette: guided, reveal-original, reveal-signed commands
+  (disabled with honest reasons when absent). New features:
+  `h2-project-map-cards`, `guided-mode-shell` (registry 28 features).
 - Open risks: apk-reverse 404 still unresolved (REFERENCE_ANALYSIS.md), Java 25
   vs JDK 17 pin (works today), i18next peer-dep warning.
-- Build state: **installers rebuilt 2026-10-18 (post-dedupe)**:
-  `…/bundle/msi/CatDot Studio_0.1.0_x64_en-US.msi` (4.97 MiB,
-  sha256 310a1e…bb35c) and `…/bundle/nsis/CatDot Studio_0.1.0_x64-setup.exe`
-  (3.83 MiB, sha256 c21f04…f1a9). Release exe smoke-tested (launch 5 s
-  alive, then force-killed; pid 16368).
+- Build state: **installers rebuilt 2026-10-18 (post-H2 cards + Guided Mode)**:
+  `…/bundle/msi/CatDot Studio_0.1.0_x64_en-US.msi` (5.02 MiB,
+  sha256 ae6a34…a22a) and `…/bundle/nsis/CatDot Studio_0.1.0_x64-setup.exe`
+  (3.87 MiB, sha256 f50f70…35e1). Release exe smoke-tested (launch 5 s
+  alive, then force-killed; pid 10256).
 - Import UX (2026-10-18, same day, ADR-0012): added a **native APK file-picker**
   ("Open APK…" in Explorer + Dashboard) via `tauri-plugin-dialog` with only
   `dialog:allow-open` granted — previously import required drag-drop or typing

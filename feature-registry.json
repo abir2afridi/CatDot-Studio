@@ -86,6 +86,20 @@
       "evidence": ["pnpm test (commands-filter, i18n parity)", "pnpm typecheck", "pnpm lint", "cargo test -p catdot-core (settings persistence)", "pnpm tauri build"]
     },
     {
+      "id": "h2-project-map-cards",
+      "title": "H2 Project Map strip + Original APK / Build outputs cards with reveal-in-folder",
+      "phase": 1,
+      "status": "real",
+      "evidence": ["pnpm typecheck", "pnpm lint", "pnpm test (i18n parity EN/BN)", "pnpm tauri build", "docs/EVIDENCE/phase-1-ide-shell.md"]
+    },
+    {
+      "id": "guided-mode-shell",
+      "title": "Guided Mode shell (activity-bar entry, real-state task list, honest planned badges)",
+      "phase": 1,
+      "status": "real",
+      "evidence": ["pnpm typecheck", "pnpm lint", "pnpm test (i18n parity EN/BN)", "pnpm tauri build"]
+    },
+    {
       "id": "settings-persistence",
       "title": "Settings persistence (SQLite, real IPC)",
       "phase": 0,

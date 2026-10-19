@@ -77,8 +77,37 @@ Session: 2026-10-18 (VS Code-style IDE shell work unit)
   clippy -D warnings PASS, fmt PASS, `pnpm typecheck` PASS, `pnpm lint` PASS,
   `pnpm test` → 12 passed (2 branding + 10 prior), `pnpm audit:reality` PASS.
 
-## Installer
-- Final rebuild of the session (IDE shell + Monaco + Diff tab + branding):
-  - `apps/desktop/src-tauri/target/release/bundle/msi/CatDot Studio_0.1.0_x64_en-US.msi` — 4.97 MiB, sha256 `0ca48fd633cc992e7c75f371168ef8c9850e06a0886631740e2ff32fde905fc8`
-  - `apps/desktop/src-tauri/target/release/bundle/nsis/CatDot Studio_0.1.0_x64-setup.exe` — 3.83 MiB, sha256 `6f6a019ae7fd10ab97ce935e725b4b30d8d0f8f884f73bfcb3af0afa538d5f29`
-- Release exe smoke test: launched 5 s alive (pid 1552), then force-killed.
+## H2 Project Map + Original/Outputs cards + Guided Mode shell (same session)
+- Core: `ApkStatus` gained `original_apk` (protected workspace copy path) and
+  `workspace_dir`; `apk_status` fills both; ts-rs regeneration via
+  `cargo test -p catdot-core` (73 passed).
+- Opener plugin: `tauri-plugin-opener` registered with ONLY
+  `opener:allow-reveal-item-in-dir` granted (deny-by-default capability);
+  `lib/opener.ts` wraps `revealItemInDir`, errors surface as structured
+  status-bar notices.
+- Frontend (all state-derived from live `apk_status` + `apk_report`, never
+  from clicks): `lib/project-stage.ts` (shared stage model none→imported→
+  edited→built→signed), `components/ProjectMap.tsx` (H2 strip + single
+  next-step coach with real actions), `components/WelcomeCards.tsx`
+  (Original-APK card: name/SHA-256/size/entries/pending + read-only badge +
+  reveal; Outputs card: exported/signed paths + reveal; honest empty state
+  with the one import button), `hooks/useImportApk.ts` (the single shared
+  picker+import action), `pages/GuidedPage.tsx` (activity-bar top entry,
+  graduation-cap icon; steps import/inspect/edit/manifest/build/install —
+  manifest + install carry honest `Planned · Phase N` badges and are never
+  clickable-fake), EditorArea welcome now renders map + cards.
+- Palette: `view.guided`, `apk.revealOriginal`, `apk.revealSigned` (disabled
+  with honest reason when the file does not exist).
+- Registry: `h2-project-map-cards`, `guided-mode-shell` added as `real`
+  (Phase 1) — audit:reality now reports 28 features.
+- Gates: typecheck PASS, lint PASS, 16 JS tests PASS (EN/BN parity incl. the
+  new map/card/guided keys), 73 cargo tests PASS, clippy PASS, fmt PASS,
+  `pnpm audit:reality` PASS (28 features).
+
+## Installer (latest rebuild of the session)
+- H2 cards + Guided Mode build:
+  - `apps/desktop/src-tauri/target/release/bundle/msi/CatDot Studio_0.1.0_x64_en-US.msi` — 5.02 MiB (5,267,456 bytes), sha256 `ae6a346631ccc4ef4b1d8b5126ad662a2acea5f9b7de615d9c4cdce864a4a22a`
+  - `apps/desktop/src-tauri/target/release/bundle/nsis/CatDot Studio_0.1.0_x64-setup.exe` — 3.87 MiB (4,053,537 bytes), sha256 `f50f7065f99ea21939432636e6b6b3c01ca4c23bcf0696efb47b7bcbc26035e1`
+- Release exe smoke test: launched 5 s alive (pid 10256), then force-killed.
+- Note: the earlier installer checksums recorded in this file (0ca48f…, 6f6a01…,
+  310a1e…, c21f04…) are superseded by this latest rebuild.
