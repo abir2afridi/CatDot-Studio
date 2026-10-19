@@ -110,6 +110,8 @@
   `＋` spawns another, and a header `⌄` minimizes the panel. Terminal is now
   the first bottom tab (default) next to Logs. Registry **35 features**
   (`integrated-terminal` → real). Cargo check + all JS gates green.
+  Installers rebuilt 2026-10-19 (terminal+tree slice): MSI 5.xx MiB sha256
+  C747BC80…DB98F, NSIS 3.xx MiB sha256 34F7A29D…BC05F5; launch smoke pid 10460.
 - Open risks: apk-reverse 404 still unresolved (REFERENCE_ANALYSIS.md), Java 25
   vs JDK 17 pin (works today), i18next peer-dep warning.
 - Build state: **installers rebuilt 2026-10-18 (Device Explorer follow-up; previous
