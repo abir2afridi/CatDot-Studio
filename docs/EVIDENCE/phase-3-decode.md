@@ -37,3 +37,48 @@
 - Launch smoke: release exe started, alive after 5 s, force-killed (pid 21080).
 - MSI 5.13 MiB, sha256 FA0273E5D9E124030540ADE3122A8862BDA8BB07394D8BB4D837C4F5C381D73D
 - NSIS 3.94 MiB, sha256 BB951E06E59D4CACB655627BCDF9C00B773EC544C3D63B360669C806E14DCD7B
+
+## UI fix slice — "file click stuck on Loading…" (2026-10-19, later session)
+
+Root cause (found + fixed): `@monaco-editor/react` resolved its loader before
+`loader.config({ monaco })` ran (it was only called from `beforeMount`), so the
+first editor open tried the default CDN — blocked offline / by the packaged
+app — and the tab sat on "Loading…" forever even though the IPC data had
+already arrived (breadcrumb + size were correct). Fix: `lib/monaco.ts`
+configures the loader at module import time. Also repaired i18n text
+corruption (mojibake) across EN+BN resources and chrome components.
+
+E2E proof on the packaged release exe (WebView2 CDP automation, real clicks):
+- fake 6-entry APK imported through the real `apk_import` IPC → entries: 6
+- app force-killed + relaunched (cold start, empty in-memory session) →
+  `apk_reopen` re-attached the workspace → Explorer rendered
+  "AndroidManifest.xml"
+- programmatic click on that tree row → `.monaco-editor` mounted and
+  `.view-lines` contained the real XML content; no "Loading…" placeholder
+- `document.title` = "CatDot Studio" (was the Vite template string)
+- same cold-start path re-verified with the user's real 163 MB workspace:
+  their entries render and the session survives restart
+
+Fix details shipped in this slice:
+- `apk_reopen` (Rust) + startup call with `["apk"]` invalidation; Explorer's
+  report query also awaits reopen so cold start can never race the restore.
+- VS Code-style menu bar (File/Edit/Selection/View/Go/Run/Terminal/Help) built
+  from the live command registry + Monaco editor-bridge actions; Ctrl+` new
+  terminal; editor tab icons/close states; window title follows active file.
+- Registry: vscode-menu-bar, monaco-offline-editor, workspace-session-reattach.
+
+Gates: `cargo check` (desktop) clean; `pnpm typecheck`/`lint` green;
+`pnpm test` 16 passed; `pnpm audit:reality` → 38 features / PASSED.
+
+Installers (final): MSI 5.23 MiB sha256
+7A40707C5CC8555911CE24D9E757E1FB2E9FAC4DAFC8761DBEECEA0873E87003;
+NSIS 4.03 MiB sha256
+EA489FB95D80A7DAEB88B93D6DD74A7FCF522EA5E26C8BC299458A5A098A3369;
+cold-start launch + CDP E2E re-run against this exact MSI-build binary (pid 20112).
+
+Honesty note: the E2E imports temporarily replaced the workspace
+`original.apk`; it was restored byte-identical from the user's source file
+(`Downloads\hillclimb_1.72.2.apk.apk`, sha256
+E5E9DDFDAB48439821F21F00248592007CC92B0AC72DEFB26AB9071C7AC0D67E,
+163,151,416 bytes, original mtime preserved).
+

@@ -112,6 +112,22 @@
   (`integrated-terminal` → real). Cargo check + all JS gates green.
   Installers rebuilt 2026-10-19 (terminal+tree slice): MSI 5.xx MiB sha256
   C747BC80…DB98F, NSIS 3.xx MiB sha256 34F7A29D…BC05F5; launch smoke pid 10460.
+- **VS Code-grade shell fixes 2026-10-19 (same day, user feedback #3)**: root-caused
+  "click file → Loading… forever" (`@monaco-editor/react` resolved its loader
+  before `loader.config`, so the first open tried the offline-blocked CDN) —
+  Monaco now configured at import time; i18n mojibake repaired (EN+BN); **menu
+  bar** (File/Edit/Selection/View/Go/Run/Terminal/Help) over the live command
+  registry + Monaco editor-bridge (undo/redo/find/select/copy/paste), Ctrl+`
+  new terminal, editor tab icons/close states, window title follows the active
+  file; **workspace session re-attach** (`apk_reopen`: app restart keeps the
+  Explorer tree + editing working — no more "no APK imported" mismatch on
+  restart). E2E on the packaged exe via WebView2 CDP: import → kill → cold
+  launch → tree rendered → real click → Monaco showed the XML, no placeholder.
+  Registry **38 features** (`vscode-menu-bar`, `monaco-offline-editor`,
+  `workspace-session-reattach` → real). Installers rebuilt: MSI 5.23 MiB
+  sha256 7A40707C…E87003, NSIS 4.03 MiB sha256 EA489FB9…A3369; cold-start
+  smoke + CDP E2E pid 20112. Note: the user's 163 MB workspace `original.apk`
+  was touched by E2E imports and restored byte-identical (sha E5E9DDFD…D67E).
 - Open risks: apk-reverse 404 still unresolved (REFERENCE_ANALYSIS.md), Java 25
   vs JDK 17 pin (works today), i18next peer-dep warning.
 - Build state: **installers rebuilt 2026-10-18 (Device Explorer follow-up; previous
