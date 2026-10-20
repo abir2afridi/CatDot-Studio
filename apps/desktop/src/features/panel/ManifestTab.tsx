@@ -1,9 +1,10 @@
-﻿// Manifest analyzer tab (Phase 2 slice): real `aapt2 dump xmltree` output,
+// Manifest analyzer tab (Phase 2 slice): real `aapt2 dump xmltree` output,
 // parsed by the Rust core — package, label, versions, permissions, components.
 // Read-only: editing happens via the structured ops in Guided/Palette.
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { apkStatus, apkManifest } from "../lib/apk";import { IpcError, normalize } from "../lib/ipc";
+import { apkStatus, apkManifest } from "../../lib/apk";
+import { IpcError, normalize } from "../../lib/ipc";
 
 export function ManifestTab() {
   const { t } = useTranslation();

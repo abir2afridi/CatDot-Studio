@@ -9,6 +9,7 @@ export function SidebarResizeHandle() {
   return (
     <div
       role="separator"
+      data-testid="sidebar-resize"
       aria-orientation="vertical"
       tabIndex={0}
       title={useUi.getState().explorerWidth.toString()}
@@ -30,6 +31,7 @@ export function BottomResizeHandle() {
   return (
     <div
       role="separator"
+      data-testid="panel-resize"
       aria-orientation="horizontal"
       tabIndex={0}
       title="Drag to resize"
@@ -51,6 +53,7 @@ export function SecondaryResizeHandle() {
   return (
     <div
       role="separator"
+      data-testid="secondary-resize"
       aria-orientation="vertical"
       tabIndex={0}
       title={useUi.getState().secondaryWidth.toString()}
@@ -88,6 +91,9 @@ function beginResize(axis: Axis): (e: React.MouseEvent) => void {
     };
 
     const onUp = () => {
+      // Detach the drag listeners: without this the panel keeps following the
+      // pointer after the mouse button is released (real resize bug).
+      window.removeEventListener("mousemove", apply);
       void persist(axis);
     };
     window.addEventListener("mousemove", apply);

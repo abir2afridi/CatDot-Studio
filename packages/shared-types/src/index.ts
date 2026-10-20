@@ -11,6 +11,7 @@ export type { ApkStatus } from "./generated/ApkStatus";
 export type { AppError } from "./generated/AppError";
 export type { Autonomy } from "./generated/Autonomy";
 export type { BuildReport } from "./generated/BuildReport";
+export type { ChatAttachment } from "./generated/ChatAttachment";
 export type { ChatMessage } from "./generated/ChatMessage";
 export type { ChatUsage } from "./generated/ChatUsage";
 export type { CheckpointInfo } from "./generated/CheckpointInfo";

@@ -1,16 +1,16 @@
 import { useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ActivityBar } from "./components/ActivityBar";
-import { EditorArea } from "./components/EditorArea";
-import { Explorer } from "./components/Explorer";
-import { BottomPanel } from "./components/BottomPanel";
+import { EditorArea } from "./features/editor/EditorArea";
+import { Explorer } from "./features/apk-explorer/Explorer";
+import { BottomPanel } from "./features/panel/BottomPanel";
 import { MenuBar } from "./components/MenuBar";
 import { BottomResizeHandle, SecondaryResizeHandle, SidebarResizeHandle, useLayoutPersistence } from "./components/ResizeHandles";
 import { CommandPalette } from "./components/CommandPalette";
 import { SecondarySidebar } from "./components/SecondarySidebar";
 import { StatusBar } from "./components/StatusBar";
 import { SystemCheckPage } from "./pages/SystemCheckPage";
-import { SettingsPage } from "./pages/SettingsPage";
+import { SettingsPage } from "./features/settings/SettingsPage";
 import { GuidedPage } from "./pages/GuidedPage";
 import { DevicesPage } from "./pages/DevicesPage";
 import { useUi } from "./state/ui";
@@ -47,6 +47,7 @@ export default function App() {
   const secondaryOpen = useUi((s) => s.secondaryOpen);
   const explorerWidth = useUi((s) => s.explorerWidth);
   const bottomOpen = useUi((s) => s.bottomOpen);
+  const bottomMaximized = useUi((s) => s.bottomMaximized);
   const queryClient = useQueryClient();
 
   // IDE keyboard shortcuts (Ctrl+Shift+P / Ctrl+B / Ctrl+J / Ctrl+S / Ctrl+W).
@@ -121,12 +122,14 @@ export default function App() {
           </>
         )}
         <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-bg">
-          <div className="min-h-0 flex-1 overflow-hidden">
-            <MainContent />
-          </div>
+          {!bottomMaximized && (
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <MainContent />
+            </div>
+          )}
           {bottomOpen && (
             <>
-              <BottomResizeHandle />
+              {!bottomMaximized && <BottomResizeHandle />}
               <BottomPanel />
             </>
           )}

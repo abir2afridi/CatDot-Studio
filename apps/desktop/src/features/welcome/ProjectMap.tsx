@@ -3,11 +3,11 @@
 // real `adb install -r` on the first ready device (honest errors otherwise).
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { apkBuildSign, deviceInstallSigned } from "../lib/apk";
-import { describeError } from "../lib/opener";
-import { useProjectStage, type Stage } from "../lib/project-stage";
-import { useImportApk } from "../hooks/useImportApk";
-import { useUi } from "../state/ui";
+import { apkBuildSign, deviceInstallSigned } from "../../lib/apk";
+import { describeError } from "../../lib/opener";
+import { useProjectStage, type Stage } from "../../lib/project-stage";
+import { useImportApk } from "../../hooks/useImportApk";
+import { useUi } from "../../state/ui";
 
 const STEP_ORDER: Stage[] = ["none", "imported", "edited", "built", "signed"];
 

@@ -6,8 +6,8 @@ import { useTranslation } from "react-i18next";
 import { apkPatchPaths, apkRevertAll, apkRevertEntry } from "../lib/apk";
 import { IpcError } from "../lib/ipc";
 import { useUi } from "../state/ui";
-import { ChatView } from "./ChatView";
-import { entryIcon } from "./Explorer";
+import { ChatView } from "../features/chat/ChatView";
+import { entryIcon } from "../features/apk-explorer/tree-model";
 
 function describe(e: unknown): string {
   return e instanceof IpcError ? e.appError.user_message || e.appError.message : String(e);

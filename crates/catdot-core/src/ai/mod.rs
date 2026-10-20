@@ -15,6 +15,7 @@ use ts_rs::TS;
 use crate::errors::{AppError, ErrorCode};
 
 pub mod anthropic;
+pub mod attach;
 pub mod gemini;
 pub mod openai_compat;
 
@@ -95,6 +96,21 @@ pub struct ProviderCapabilities {
 pub struct ChatMessage {
     pub role: String,
     pub content: String,
+}
+
+/// One user-picked file (or a file collected from a picked folder) attached to
+/// a chat message as plain-text context. `text` stays `None` for binaries and
+/// skip reasons land in `note` — nothing is silently dropped.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct ChatAttachment {
+    pub path: String,
+    pub name: String,
+    pub bytes: u64,
+    pub text: Option<String>,
+    pub truncated: bool,
+    pub note: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -3,9 +3,9 @@
 // Self-hosted + offline (see lib/monaco.ts).
 import { Editor, type OnMount, type Monaco } from "@monaco-editor/react";
 import { useTranslation } from "react-i18next";
-import { getMonaco, monacoLanguage, monacoTheme, monaco } from "../lib/monaco";
-import { getActiveEditor, setActiveEditor } from "../lib/editor-bridge";
-import { useUi } from "../state/ui";
+import { getMonaco, monacoLanguage, monacoTheme, monaco } from "../../lib/monaco";
+import { getActiveEditor, setActiveEditor } from "../../lib/editor-bridge";
+import { useUi } from "../../state/ui";
 
 interface Props {
   entryPath: string;

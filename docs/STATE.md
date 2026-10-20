@@ -150,3 +150,16 @@
   save request; transient notices via CSS fade (no JS timers —
   audit:reality clean); shared file-picker `lib/pick.ts`; dead
   `pages/Dashboard.tsx` removed. Evidence: `docs/EVIDENCE/phase-1-ide-shell.md`.
+
+- **2026-10-20 — settings writes actually persist + feature-module refactor**:
+  root-caused silent settings loss (frontend used scope `user`; Rust accepts
+  `global|project`) → `settingsSet` now defaults to `global`, verified via CDP
+  (`ui.bottomHeight` 480, model save/restore). Shipped chat attachments (Rust
+  `ai/attach.rs` caps + `ai_read_attachments` + chips/context), model switch,
+  new-chat/⋮ menu, resize-sticky fix, panel maximize, Explorer refresh +
+  collapse-all (helper unit-tested), middle-click tab close. Refactored the UI
+  into `apps/desktop/src/features/{chat,apk-explorer,editor,welcome,panel,terminal,settings}`
+  (per-feature files, largest 244 lines). Gates: typecheck/lint green, 26
+  vitest passed, audit 44 features PASSED; E2E all green with zero console
+  errors. Installers: MSI 5.25 MiB sha256 EBE89C09…C9EA15; NSIS 4.05 MiB
+  sha256 D5C0BF63…56BBF7. Evidence: `docs/EVIDENCE/phase-3-decode.md`.

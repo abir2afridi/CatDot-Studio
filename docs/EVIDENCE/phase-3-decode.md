@@ -82,3 +82,43 @@ Honesty note: the E2E imports temporarily replaced the workspace
 E5E9DDFDAB48439821F21F00248592007CC92B0AC72DEFB26AB9071C7AC0D67E,
 163,151,416 bytes, original mtime preserved).
 
+## 2026-10-20 — chat attachments, layout fixes, settings-scope root cause, feature modules
+
+Root cause found for "settings changed but reset after restart": the Rust
+`settings_set` command accepts only `global|project`, while the frontend
+defaulted to `user`; every default-scope write failed silently. `lib/ipc.ts`
+now defaults to `global` and all explicit scopes use `global`.
+
+Shipped (all real IPC, no simulation):
+- `ai_read_attachments` (Rust `ai/attach.rs`, caps 128 KB/file, 512 KB total,
+  40 files, depth 3, skip dirs) + generated `ChatAttachment` type; chat attach
+  file/folder chips + context block assembly.
+- Chat model switching persisted via `ai.provider.default_model`; ⋮ menu
+  (new chat, copy, attach file/folder, settings) + `+` new chat.
+- Resize sticky bug fixed (listener removed on mouseup, verified stable);
+  bottom panel maximize/restore; Explorer collapse-all + refresh; middle-click
+  tab close; testids for automation.
+- Feature-module refactor requested by the user: chat, apk-explorer, editor,
+  welcome, panel, terminal, settings now live in `apps/desktop/src/features/`
+  with per-feature files (largest 244 lines); pure `tree-model` helpers.
+
+E2E (WebView2 CDP on the packaged release exe, real clicks; console errors []):
+- model save → `settings_get ai.provider` reflects test model → restored
+- attach preflight read `package.json` (649 B, text); empty selection →
+  structured `INVALID_INPUT` with user message
+- resize: 328 → 480 during drag → 480 after release and after extra mousemove
+- maximize 751 px → restore 480 px; persisted `ui.bottomHeight` = 480
+- attach/menu popovers, refresh keeps tree, middle-click closes tab
+- collapse-all rowsBefore 0: user workspace is a flat XAPK tree — covered by
+  `lib/tree.test.ts` (collectDirPaths) instead of a fake E2E claim
+
+Gates: `pnpm typecheck`/`lint` green; `pnpm test` 26 passed; `cargo test
+-p catdot-core` attach module 6 passed (earlier this session);
+`pnpm audit:reality` → 44 features / PASSED.
+
+Installers (this build): MSI 5.25 MiB sha256
+EBE89C096408C0BE245A434A9C96C1AC4E775355D97B8BFF8F1F725017C9EA15;
+NSIS 4.05 MiB sha256
+D5C0BF6372CF6B5AC4884A88B51A172B128EC1BC194445A70DC321A74356BBF7.
+
+

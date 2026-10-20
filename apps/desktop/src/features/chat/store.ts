@@ -2,7 +2,7 @@
 // stream keeps running while the panel is closed; exactly one real provider
 // stream at a time. No fake replies: errors surface verbatim.
 import type { AiStreamEvent } from "@catdot/shared-types";
-import { aiChatCancel, aiChatStart, onChatEvent } from "./ipc";
+import { aiChatCancel, aiChatStart, onChatEvent } from "../../lib/ipc";
 
 export interface ChatLine {
   role: "user" | "assistant";
@@ -55,7 +55,7 @@ function cleanup(): void {
   activeStream = null;
 }
 
-export async function sendChat(raw: string): Promise<void> {
+export async function sendChat(raw: string, providerText?: string): Promise<void> {
   const message = raw.trim();
   if (message === "" || snapshot.busy) return;
   emit({
@@ -65,7 +65,7 @@ export async function sendChat(raw: string): Promise<void> {
     lines: [...snapshot.lines, { role: "user", text: message, done: true }],
   });
   try {
-    const streamId = await aiChatStart(message);
+    const streamId = await aiChatStart((providerText ?? message).trim());
     activeStream = streamId;
     emit({
       ...snapshot,
@@ -87,6 +87,13 @@ export async function sendChat(raw: string): Promise<void> {
     emit({ ...snapshot, busy: false, error: describeError(e) });
     cleanup();
   }
+}
+
+/** Start a fresh conversation; stops any in-flight stream first. */
+export async function newChat(): Promise<void> {
+  if (snapshot.busy) await cancelChat();
+  cleanup();
+  emit({ lines: [], busy: false, error: null });
 }
 
 export async function cancelChat(): Promise<void> {

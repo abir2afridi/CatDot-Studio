@@ -4,9 +4,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { deviceLogcat } from "../lib/apk";
-import { IpcError } from "../lib/ipc";
-import { useUi } from "../state/ui";
+import { deviceLogcat } from "../../lib/apk";
+import { IpcError } from "../../lib/ipc";
+import { useUi } from "../../state/ui";
 
 const LINE_OPTIONS = [100, 300, 1000] as const;
 

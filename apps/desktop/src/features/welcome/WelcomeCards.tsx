@@ -2,10 +2,10 @@
 // Every field comes from real workspace state; "Reveal in folder" opens the
 // actual file in Windows Explorer via the opener plugin.
 import { useTranslation } from "react-i18next";
-import { useProjectStage } from "../lib/project-stage";
-import { revealPath, describeError } from "../lib/opener";
-import { useImportApk } from "../hooks/useImportApk";
-import { useUi } from "../state/ui";
+import { useProjectStage } from "../../lib/project-stage";
+import { revealPath, describeError } from "../../lib/opener";
+import { useImportApk } from "../../hooks/useImportApk";
+import { useUi } from "../../state/ui";
 
 export function WelcomeCards() {
   const { t } = useTranslation();

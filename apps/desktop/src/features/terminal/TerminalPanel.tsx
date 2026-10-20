@@ -7,8 +7,8 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 import type { TermInfo } from "@catdot/shared-types";
-import { onTermExit, onTermOut, termClose, termResize, termSpawn, termWrite, IpcError } from "../lib/ipc";
-import { useUi } from "../state/ui";
+import { onTermExit, onTermOut, termClose, termResize, termSpawn, termWrite, IpcError } from "../../lib/ipc";
+import { useUi } from "../../state/ui";
 
 interface TermTab {
   id: number;

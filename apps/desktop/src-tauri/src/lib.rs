@@ -1,7 +1,8 @@
 ﻿//! CatDot Studio desktop shell (Tauri 2). Exposes the app's own commands only
 //! (default-deny capabilities; no generic fs/shell/http plugin access from the
-//! webview â€” see Part E4). All heavy work lives in `catdot-core`.
+//! webview — see Part E4). All heavy work lives in `catdot-core`.
 
+mod ai_attach;
 mod apk_commands;
 mod commands;
 mod logs;
@@ -85,6 +86,7 @@ pub fn run() {
             commands::ai_test_connection,
             commands::ai_chat_start,
             commands::ai_chat_cancel,
+            ai_attach::ai_read_attachments,
             commands::logs_recent,
             commands::logs_clear,
             apk_commands::apk_import,

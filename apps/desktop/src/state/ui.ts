@@ -42,6 +42,8 @@ interface UiState {
   secondaryWidth: number;
   explorerWidth: number;
   bottomHeight: number;
+  /** Panel fills the editor column (VS Code maximize); resets on drag. */
+  bottomMaximized: boolean;
   activeBottomTab: BottomTab;
   cursorLine: number;
   cursorCol: number;
@@ -73,6 +75,7 @@ interface UiState {
   setLocale: (l: "en" | "bn") => void;
   toggleExplorer: () => void;
   toggleBottom: () => void;
+  toggleBottomMaximize: () => void;
   toggleSecondary: () => void;
   setSecondaryView: (v: "chat" | "changes") => void;
   openSecondaryView: (v: "chat" | "changes") => void;
@@ -113,6 +116,7 @@ export const useUi = create<UiState>((set) => ({
   secondaryWidth: clamp(300, SECONDARY_WIDTH.min, SECONDARY_WIDTH.max),
   explorerWidth: clamp(288, EXPLORER_WIDTH.min, EXPLORER_WIDTH.max),
   bottomHeight: clamp(220, BOTTOM_HEIGHT.min, BOTTOM_HEIGHT.max),
+  bottomMaximized: false,
   activeBottomTab: "terminal",
   cursorLine: 1,
   cursorCol: 1,
@@ -163,7 +167,13 @@ export const useUi = create<UiState>((set) => ({
     set({ locale });
   },
   toggleExplorer: () => set((s) => ({ explorerOpen: !s.explorerOpen })),
-  toggleBottom: () => set((s) => ({ bottomOpen: !s.bottomOpen })),
+  toggleBottom: () =>
+    set((s) => ({
+      bottomOpen: !s.bottomOpen,
+      bottomMaximized: s.bottomOpen ? false : s.bottomMaximized,
+    })),
+  toggleBottomMaximize: () =>
+    set((s) => ({ bottomOpen: true, bottomMaximized: !s.bottomMaximized })),
   toggleSecondary: () => set((s) => ({ secondaryOpen: !s.secondaryOpen })),
   setSecondaryView: (secondaryView) => set({ secondaryView }),
   openSecondaryView: (secondaryView) => set({ secondaryView, secondaryOpen: true }),
@@ -172,7 +182,7 @@ export const useUi = create<UiState>((set) => ({
   setExplorerWidth: (w) =>
     set({ explorerWidth: clamp(w, EXPLORER_WIDTH.min, EXPLORER_WIDTH.max) }),
   setBottomHeight: (h) =>
-    set({ bottomHeight: clamp(h, BOTTOM_HEIGHT.min, BOTTOM_HEIGHT.max) }),
+    set({ bottomHeight: clamp(h, BOTTOM_HEIGHT.min, BOTTOM_HEIGHT.max), bottomMaximized: false }),
   setActiveBottomTab: (activeBottomTab) => set({ activeBottomTab }),
   setCursor: (cursorLine, cursorCol) => set({ cursorLine, cursorCol }),
   setLastBuild: (lastBuild) => set({ lastBuild }),

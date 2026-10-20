@@ -11,9 +11,9 @@ import {
   checkpointDelete,
   checkpointList,
   checkpointRestore,
-} from "../lib/apk";
-import { IpcError } from "../lib/ipc";
-import { useUi } from "../state/ui";
+} from "../../lib/apk";
+import { IpcError } from "../../lib/ipc";
+import { useUi } from "../../state/ui";
 
 export function ChangeHistory() {
   const { t } = useTranslation();

@@ -218,7 +218,7 @@ function useMenus(openAbout: () => void): MenuDef[] {
       toggleTheme: () => {
         const next = theme === "dark" ? "light" : "dark";
         setTheme(next);
-        void settingsSet("ui.theme", next, "user");
+        void settingsSet("ui.theme", next, "global");
         document.documentElement.dataset.theme = next;
       },
       openPalette: () => useUi.getState().setPaletteOpen(true),

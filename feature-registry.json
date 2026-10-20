@@ -139,7 +139,7 @@
       "title": "Settings persistence (SQLite, real IPC)",
       "phase": 0,
       "status": "real",
-      "evidence": ["cargo test -p catdot-core storage::settings", "apps/desktop Settings page"]
+      "evidence": ["cargo test -p catdot-core storage::settings", "apps/desktop Settings page", "Frontend writes use the accepted global scope (lib/ipc.ts settingsSet default) — verified via CDP E2E: ui.bottomHeight/ai.provider persisted after UI actions"]
     },
     {
       "id": "system-check-ui",
@@ -297,25 +297,58 @@
     },
     {
       "id": "vscode-titlebar-controls",
-      "title": "VS Code-style title bar: back/forward file history, command search pill, primary/panel/secondary layout toggles, AI chip and Settings gear",
+      "title": "VS Code-style title bar: back/forward file history, command search pill, primary/panel/secondary layout toggles, AI chat chip and Settings gear",
       "phase": 3,
       "status": "real",
       "evidence": [
-        "apps/desktop TitleBarActions.tsx: real file-history navigation (state/ui.ts fileHistory + goBack/goForward), palette-opening search pill, Ctrl+B / Ctrl+J / Ctrl+Alt+B layout toggles, AI page chip, Settings gear with pressed states",
+        "apps/desktop TitleBarActions.tsx: real file-history navigation (state/ui.ts fileHistory + goBack/goForward), palette-opening search pill, Ctrl+B / Ctrl+J / Ctrl+Alt+B layout toggles, AI chat chip, Settings gear with pressed states",
         "Alt+Left / Alt+Right handled in useShortcuts; Go menu Back/Forward items show 'Nothing to navigate' when the stack is empty; View menu exposes the secondary sidebar",
         "pnpm typecheck/lint green this session"
       ]
     },
     {
       "id": "secondary-sidebar-changes",
-      "title": "VS Code-style secondary (right) sidebar as a view container: Chat (shared AI conversation) and Changes (pending patches, open/revert) tabs",
+      "title": "VS Code-style secondary (right) sidebar as a global view container: Chat (the single shared AI conversation) and Changes (pending patches, open/revert) tabs",
       "phase": 3,
       "status": "real",
       "evidence": [
-        "apps/desktop SecondarySidebar.tsx: Chat | Changes view tabs (ui.secondaryView), apkPatchPaths query, apkRevertEntry / apkRevertAll mutations with ['apk'] invalidation, file-type icons, honest empty/no-session states, close button",
-        "lib/chat-store.ts: one shared AI conversation (module store) so sidebar and AI page never lose messages; streams continue while the panel is closed; real provider via ai_chat_start, stop button cancels the stream",
-        "Title bar AI chip toggles the Chat view open/closed (Ctrl+Alt+B toggles the container); View menu exposes both; mounted in App.tsx on the Explorer page while ui.secondaryOpen",
+        "apps/desktop SecondarySidebar.tsx: Chat | Changes view tabs (ui.secondaryView), apkPatchPaths query, apkRevertEntry / apkRevertAll mutations with ['apk'] invalidation, file-type icons, honest empty/no-session states, close button, resizable width persisted as ui.secondaryWidth",
+        "lib/chat-store.ts: the one shared AI conversation (module store; standalone AI page removed to end the duplication); streams continue while the panel is closed; real provider via ai_chat_start, stop button cancels the stream",
+        "Title bar AI chip opens the Chat view (Ctrl+Alt+B toggles the container); View menu exposes both; mounted globally in App.tsx while ui.secondaryOpen",
         "WebView2 CDP E2E on the packaged exe: chat open/close, changes switch, panel toggle, settings round-trip, manifest.json open (Monaco) — all passed with zero console errors",
+        "pnpm typecheck/lint/test green this session"
+      ]
+    },
+    {
+      "id": "ai-chat-attachments",
+      "title": "Chat attachments: pick real files/folders, read them through a capped Rust command, and send them as prompt context",
+      "phase": 3,
+      "status": "real",
+      "evidence": [
+        "crates/catdot-core ai/attach.rs: UTF-8 text reads with per-file 128 KB / total 512 KB / 40-file / depth-3 caps, binary+oversize skip notes and budget truncation; 6 unit tests (empty selection, text read, binary+oversize, folder walk with node_modules skip, budget truncation, UTF-8 boundary)",
+        "apps/desktop/src-tauri ai_attach.rs: ai_read_attachments command wraps the core reader; registered in lib.rs; ChatAttachment type generated via ts-rs into packages/shared-types",
+        "ChatView.tsx: composer + opens a real file/folder picker (dialog plugin), chips show name/size/skip reason with remove, and text context is appended to the provider message while the bubble shows only the user's text"
+      ]
+    },
+    {
+      "id": "ai-model-switch",
+      "title": "Chat model switching from the chat header, persisted to the provider config",
+      "phase": 3,
+      "status": "real",
+      "evidence": [
+        "ChatView.tsx model popover loads ai.provider via loadProviderConfig and saves default_model through saveProviderConfig (the backend rebuilds the provider per request, so the next message uses the new model)",
+        "Save button disabled until a non-empty, changed model is entered; failures surface the structured IpcError message; success notice + settings query invalidation"
+      ]
+    },
+    {
+      "id": "ide-layout-polish",
+      "title": "IDE layout polish: panel maximize/restore, explorer collapse-all/refresh, middle-click tab close, and a resize-drag leak fix",
+      "phase": 3,
+      "status": "real",
+      "evidence": [
+        "ResizeHandles.tsx beginResize: mousemove listener is removed on mouseup (previously the panel kept following the pointer after release)",
+        "state/ui.ts bottomMaximized + BottomPanel maximize/restore button (editor column folds away; drag restores the sized panel); panel close resets the maximized state",
+        "Explorer.tsx header: collapse-all token folds every directory; refresh invalidates the ['apk'] queries; EditorArea TabStrip closes a tab on middle-click",
         "pnpm typecheck/lint/test green this session"
       ]
     },

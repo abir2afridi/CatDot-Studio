@@ -4,9 +4,9 @@
 import { DiffEditor } from "@monaco-editor/react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { apkOpenEntry } from "../lib/apk";
-import { monacoLanguage, monacoTheme } from "../lib/monaco";
-import { useUi } from "../state/ui";
+import { apkOpenEntry } from "../../lib/apk";
+import { monacoLanguage, monacoTheme } from "../../lib/monaco";
+import { useUi } from "../../state/ui";
 
 export function DiffTab() {
   const { t } = useTranslation();

@@ -5,6 +5,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
   AiStreamEvent,
   AppError,
+  ChatAttachment,
   LogEntry,
   ProviderCapabilities,
   Setting,
@@ -46,7 +47,7 @@ export async function call<T>(cmd: string, args?: Record<string, unknown>): Prom
 export const settingsGet = (key: string) =>
   call<unknown | null>("settings_get", { key });
 
-export const settingsSet = (key: string, value: unknown, scope = "user") =>
+export const settingsSet = (key: string, value: unknown, scope = "global") =>
   call<void>("settings_set", { key, value, scope });
 
 export const settingsList = () => call<Setting[]>("settings_list");
@@ -73,6 +74,10 @@ export const aiChatStart = (message: string) =>
 
 export const aiChatCancel = (streamId: string) =>
   call<void>("ai_chat_cancel", { streamId });
+
+/** Read user-picked files/folders as bounded plain-text chat context. */
+export const aiReadAttachments = (paths: string[]) =>
+  call<ChatAttachment[]>("ai_read_attachments", { paths });
 
 export interface ChatStreamPayload {
   stream_id: string;
