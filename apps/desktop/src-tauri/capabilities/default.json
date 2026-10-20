@@ -3,5 +3,11 @@
   "identifier": "default",
   "description": "Default capability for the main window (app commands only + file-pick dialog + reveal-in-folder; default-deny)",
   "windows": ["main"],
-  "permissions": ["core:default", "dialog:allow-open", "opener:allow-reveal-item-in-dir"]
+  "permissions": [
+    "core:default",
+    "core:window:allow-set-title",
+    "core:window:allow-close",
+    "dialog:allow-open",
+    "opener:allow-reveal-item-in-dir"
+  ]
 }

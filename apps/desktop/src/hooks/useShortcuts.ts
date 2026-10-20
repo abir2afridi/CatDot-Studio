@@ -12,6 +12,33 @@ export function useShortcuts(): void {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const ui = useUi.getState();
+
+      // Ctrl+Alt+B — toggle the secondary (right) sidebar.
+      if (e.ctrlKey && e.altKey && !e.shiftKey && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        if (ui.page === "explorer") {
+          ui.toggleSecondary();
+        } else {
+          ui.setPage("explorer");
+          if (!ui.secondaryOpen) ui.toggleSecondary();
+        }
+        return;
+      }
+
+      // Alt+Left / Alt+Right — file-history navigation (VS Code Go back/forward).
+      if (
+        !e.ctrlKey &&
+        e.altKey &&
+        !e.shiftKey &&
+        (e.key === "ArrowLeft" || e.key === "ArrowRight")
+      ) {
+        if (ui.paletteOpen) return;
+        e.preventDefault();
+        if (e.key === "ArrowLeft") ui.goBack();
+        else ui.goForward();
+        return;
+      }
+
       const ctrl = e.ctrlKey && !e.altKey;
       if (!ctrl) return;
 

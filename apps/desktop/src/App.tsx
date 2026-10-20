@@ -7,6 +7,7 @@ import { BottomPanel } from "./components/BottomPanel";
 import { MenuBar } from "./components/MenuBar";
 import { BottomResizeHandle, SidebarResizeHandle, useLayoutPersistence } from "./components/ResizeHandles";
 import { CommandPalette } from "./components/CommandPalette";
+import { SecondarySidebar } from "./components/SecondarySidebar";
 import { StatusBar } from "./components/StatusBar";
 import { SystemCheckPage } from "./pages/SystemCheckPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -46,6 +47,7 @@ export default function App() {
   const setLocale = useUi((s) => s.setLocale);
   const setNotice = useUi((s) => s.setNotice);
   const explorerOpen = useUi((s) => s.explorerOpen);
+  const secondaryOpen = useUi((s) => s.secondaryOpen);
   const explorerWidth = useUi((s) => s.explorerWidth);
   const bottomOpen = useUi((s) => s.bottomOpen);
   const queryClient = useQueryClient();
@@ -132,6 +134,7 @@ export default function App() {
             </>
           )}
         </main>
+        {showExplorerSidebar && secondaryOpen && <SecondarySidebar />}
       </div>
       <StatusBar />
       <CommandPalette />

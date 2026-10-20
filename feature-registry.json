@@ -294,6 +294,28 @@
         "App.tsx startup effect calls apkReopen(); failures surface as a status-bar notice (no swallowed errors)",
         "cargo check desktop clean; pnpm typecheck/lint green this session"
       ]
+    },
+    {
+      "id": "vscode-titlebar-controls",
+      "title": "VS Code-style title bar: back/forward file history, command search pill, primary/panel/secondary layout toggles, AI chip and Settings gear",
+      "phase": 3,
+      "status": "real",
+      "evidence": [
+        "apps/desktop TitleBarActions.tsx: real file-history navigation (state/ui.ts fileHistory + goBack/goForward), palette-opening search pill, Ctrl+B / Ctrl+J / Ctrl+Alt+B layout toggles, AI page chip, Settings gear with pressed states",
+        "Alt+Left / Alt+Right handled in useShortcuts; Go menu Back/Forward items show 'Nothing to navigate' when the stack is empty; View menu exposes the secondary sidebar",
+        "pnpm typecheck/lint green this session"
+      ]
+    },
+    {
+      "id": "secondary-sidebar-changes",
+      "title": "VS Code-style secondary (right) sidebar with a real Changes view: pending patch paths, open on click, revert one/all",
+      "phase": 3,
+      "status": "real",
+      "evidence": [
+        "apps/desktop SecondarySidebar.tsx: apkPatchPaths query, apkRevertEntry / apkRevertAll mutations with ['apk'] invalidation, file-type icons, honest empty/no-session states, close button",
+        "Mounted in App.tsx only on the Explorer page while ui.secondaryOpen; width-bounded aside with data-testid='secondary-sidebar'",
+        "pnpm typecheck/lint green this session"
+      ]
     }
   ]
 }

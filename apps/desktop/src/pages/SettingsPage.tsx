@@ -102,7 +102,7 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl p-6">
+    <div className="max-w-2xl p-6" data-testid="settings-page">
       <h1 className="text-xl font-semibold">{t("settings.title")}</h1>
       <p className="mt-1 text-sm text-text-dim">{t("settings.subtitle")}</p>
 

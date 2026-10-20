@@ -10,6 +10,7 @@ import { useCommands } from "../lib/commands";
 import { runEditorAction } from "../lib/editor-bridge";
 import { settingsSet } from "../lib/ipc";
 import { useUi, type BottomTab } from "../state/ui";
+import { TitleBarActions, showSecondary } from "./TitleBarActions";
 
 interface MenuItem {
   key: string;
@@ -45,6 +46,8 @@ interface Ctx {
   toggleTheme: () => void;
   openPalette: () => void;
   openAbout: () => void;
+  canBack: boolean;
+  canForward: boolean;
 }
 
 const pick = (...items: (MenuItem | null)[]): MenuItem[] =>
@@ -93,6 +96,12 @@ function buildSelectionMenu(c: Ctx): MenuItem[] {
 function buildViewMenu(c: Ctx): MenuItem[] {
   return [
     ...pick(c.cmd("view.toggleSidebar", "Ctrl+B"), c.cmd("view.togglePanel", "Ctrl+J")),
+    {
+      key: "view.secondary",
+      title: c.t("titlebar.toggleSecondary"),
+      shortcut: "Ctrl+Alt+B",
+      run: () => showSecondary(),
+    },
     { ...c.tab("terminal", c.t("panel.terminal")), separator: true },
     c.tab("logs", c.t("panel.logs")),
     c.tab("build", c.t("panel.build")),
@@ -116,14 +125,31 @@ function buildViewMenu(c: Ctx): MenuItem[] {
 }
 
 function buildGoMenu(c: Ctx): MenuItem[] {
-  return pick(
-    c.cmd("view.guided"),
-    c.cmd("view.explorer"),
-    c.cmd("view.ai"),
-    c.cmd("view.devices"),
-    c.cmd("view.system"),
-    c.cmd("view.settings"),
-  );
+  return [
+    {
+      key: "go.back",
+      title: c.t("titlebar.back"),
+      shortcut: "Alt+←",
+      disabledReason: c.canBack ? undefined : c.t("menu.noHistory"),
+      run: () => useUi.getState().goBack(),
+    },
+    {
+      key: "go.forward",
+      title: c.t("titlebar.forward"),
+      shortcut: "Alt+→",
+      disabledReason: c.canForward ? undefined : c.t("menu.noHistory"),
+      separator: true,
+      run: () => useUi.getState().goForward(),
+    },
+    ...pick(
+      c.cmd("view.guided"),
+      c.cmd("view.explorer"),
+      c.cmd("view.ai"),
+      c.cmd("view.devices"),
+      c.cmd("view.system"),
+      c.cmd("view.settings"),
+    ),
+  ];
 }
 
 function buildRunMenu(c: Ctx): MenuItem[] {
@@ -153,6 +179,8 @@ function useMenus(openAbout: () => void): MenuDef[] {
   const theme = useUi((s) => s.theme);
   const setTheme = useUi((s) => s.setTheme);
   const newTerminal = useUi((s) => s.newTerminal);
+  const canBack = useUi((s) => s.historyIndex > 0);
+  const canForward = useUi((s) => s.historyIndex < s.fileHistory.length - 1);
 
   const ctx = useMemo<Ctx>(() => {
     const byId = new Map(commands.map((c) => [c.id, c]));
@@ -191,8 +219,10 @@ function useMenus(openAbout: () => void): MenuDef[] {
       },
       openPalette: () => useUi.getState().setPaletteOpen(true),
       openAbout,
+      canBack,
+      canForward,
     };
-  }, [commands, t, activeFile, draft, theme, setTheme, newTerminal, openAbout]);
+  }, [commands, t, activeFile, draft, theme, setTheme, newTerminal, openAbout, canBack, canForward]);
 
   return useMemo(
     () => [
@@ -296,6 +326,9 @@ export function MenuBar() {
           )}
         </div>
       ))}
+      <div className="ml-auto flex items-center pl-2">
+        <TitleBarActions />
+      </div>
       {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
     </div>
   );

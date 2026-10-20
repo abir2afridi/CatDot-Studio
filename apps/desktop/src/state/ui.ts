@@ -36,6 +36,8 @@ interface UiState {
   /** IDE layout. */
   explorerOpen: boolean;
   bottomOpen: boolean;
+  /** VS Code-style secondary (right) sidebar — pending changes view. */
+  secondaryOpen: boolean;
   explorerWidth: number;
   bottomHeight: number;
   activeBottomTab: BottomTab;
@@ -51,6 +53,9 @@ interface UiState {
   /** Command palette visibility + selected index. */
   paletteOpen: boolean;
   paletteSelected: number;
+  /** File-visit history backing the title-bar back/forward buttons. */
+  fileHistory: string[];
+  historyIndex: number;
   /** one-shot status-bar notice (mutation result surfaces here). */
   notice: Notice | null;
   /** Selected device serial for install/logcat; null = first ready device. */
@@ -66,6 +71,7 @@ interface UiState {
   setLocale: (l: "en" | "bn") => void;
   toggleExplorer: () => void;
   toggleBottom: () => void;
+  toggleSecondary: () => void;
   setExplorerWidth: (w: number) => void;
   setBottomHeight: (h: number) => void;
   setActiveBottomTab: (t: BottomTab) => void;
@@ -76,6 +82,8 @@ interface UiState {
   markTerminalRequestHandled: () => void;
   setPaletteOpen: (open: boolean) => void;
   setPaletteSelected: (i: number) => void;
+  goBack: () => void;
+  goForward: () => void;
   setNotice: (n: Notice | null) => void;
   setDeviceSerial: (s: string | null) => void;
 }
@@ -94,6 +102,7 @@ export const useUi = create<UiState>((set) => ({
   locale: localStorage.getItem("locale") === "bn" ? "bn" : "en",
   explorerOpen: true,
   bottomOpen: false,
+  secondaryOpen: false,
   explorerWidth: clamp(288, EXPLORER_WIDTH.min, EXPLORER_WIDTH.max),
   bottomHeight: clamp(220, BOTTOM_HEIGHT.min, BOTTOM_HEIGHT.max),
   activeBottomTab: "terminal",
@@ -105,15 +114,22 @@ export const useUi = create<UiState>((set) => ({
   terminalRequestHandled: 0,
   paletteOpen: false,
   paletteSelected: 0,
+  fileHistory: [],
+  historyIndex: -1,
   notice: null,
   setPage: (page) => set({ page, paletteOpen: false }),
   openFile: (path) =>
-    set((s) => ({
-      openFiles: s.openFiles.includes(path)
-        ? s.openFiles
-        : [...s.openFiles, path],
-      activeFile: path,
-    })),
+    set((s) => {
+      const openFiles = s.openFiles.includes(path) ? s.openFiles : [...s.openFiles, path];
+      if (s.activeFile === path) return { openFiles, activeFile: path };
+      const fileHistory = [...s.fileHistory.slice(0, s.historyIndex + 1), path].slice(-50);
+      return {
+        openFiles,
+        activeFile: path,
+        fileHistory,
+        historyIndex: fileHistory.length - 1,
+      };
+    }),
   closeFile: (path) =>
     set((s) => {
       const openFiles = s.openFiles.filter((f) => f !== path);
@@ -140,6 +156,7 @@ export const useUi = create<UiState>((set) => ({
   },
   toggleExplorer: () => set((s) => ({ explorerOpen: !s.explorerOpen })),
   toggleBottom: () => set((s) => ({ bottomOpen: !s.bottomOpen })),
+  toggleSecondary: () => set((s) => ({ secondaryOpen: !s.secondaryOpen })),
   setExplorerWidth: (w) =>
     set({ explorerWidth: clamp(w, EXPLORER_WIDTH.min, EXPLORER_WIDTH.max) }),
   setBottomHeight: (h) =>
@@ -158,6 +175,30 @@ export const useUi = create<UiState>((set) => ({
   setPaletteOpen: (paletteOpen) =>
     set((s) => ({ paletteOpen, paletteSelected: paletteOpen ? s.paletteSelected : 0 })),
   setPaletteSelected: (paletteSelected) => set({ paletteSelected }),
+  goBack: () =>
+    set((s) => {
+      if (s.historyIndex <= 0) return {};
+      const idx = s.historyIndex - 1;
+      const path = s.fileHistory[idx];
+      if (path == null) return {};
+      return {
+        historyIndex: idx,
+        activeFile: path,
+        openFiles: s.openFiles.includes(path) ? s.openFiles : [...s.openFiles, path],
+      };
+    }),
+  goForward: () =>
+    set((s) => {
+      if (s.historyIndex >= s.fileHistory.length - 1) return {};
+      const idx = s.historyIndex + 1;
+      const path = s.fileHistory[idx];
+      if (path == null) return {};
+      return {
+        historyIndex: idx,
+        activeFile: path,
+        openFiles: s.openFiles.includes(path) ? s.openFiles : [...s.openFiles, path],
+      };
+    }),
   setNotice: (notice) => set({ notice }),
   deviceSerial: null,
   setDeviceSerial: (deviceSerial) => set({ deviceSerial }),

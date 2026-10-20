@@ -43,6 +43,19 @@ export const en = {
     aboutTagline: "AI-powered Android APK modding workspace",
     version: "Version",
     closeWindow: "Close Window",
+    noHistory: "Nothing to navigate",
+  },
+  titlebar: {
+    back: "Back",
+    forward: "Forward",
+    search: "Search or run a command…",
+    toggleSecondary: "Toggle Secondary Sidebar",
+  },
+  secondary: {
+    title: "Changes",
+    empty: "No pending edits",
+    noSession: "No APK imported yet",
+    revertAll: "Revert all",
   },
   map: {
     title: "Project Map",
@@ -353,6 +366,19 @@ export const bn: typeof en = {
     aboutTagline: "এআই-চালিত অ্যান্ড্রয়েড এপিকে মডিং ওয়ার্কস্পেস",
     version: "সংস্করণ",
     closeWindow: "উইন্ডো বন্ধ করুন",
+    noHistory: "নেভিগেট করার কিছু নেই",
+  },
+  titlebar: {
+    back: "পেছনে",
+    forward: "সামনে",
+    search: "ফাইল বা কমান্ড খুঁজুন…",
+    toggleSecondary: "সেকেন্ডারি সাইডবার টগল করুন",
+  },
+  secondary: {
+    title: "পরিবর্তনসমূহ",
+    empty: "কোনো পেন্ডিং সম্পাদনা নেই",
+    noSession: "এখনো কোনো এপিকে ইমপোর্ট করা হয়নি",
+    revertAll: "সব ফিরিয়ে নিন",
   },
   map: {
     title: "প্রজেক্ট ম্যাপ",
