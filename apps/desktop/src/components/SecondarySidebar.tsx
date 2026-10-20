@@ -1,11 +1,12 @@
-// VS Code-style secondary (right) sidebar. Hosts a real "Changes" view over
-// the workspace patch set: click a path to open, revert one or all. Empty /
-// no-session states are honest — nothing here is a placeholder.
+// VS Code-style secondary (right) sidebar: a real view container hosting
+// Chat (AI assistant, same store as the AI page) and Changes (pending patch
+// paths with open/revert). Only one view shows at a time, like VS Code.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { apkPatchPaths, apkRevertAll, apkRevertEntry } from "../lib/apk";
 import { IpcError } from "../lib/ipc";
 import { useUi } from "../state/ui";
+import { ChatView } from "./ChatView";
 import { entryIcon } from "./Explorer";
 
 function describe(e: unknown): string {
@@ -14,10 +15,79 @@ function describe(e: unknown): string {
 
 export function SecondarySidebar() {
   const { t } = useTranslation();
+  const view = useUi((s) => s.secondaryView);
+  const setView = useUi((s) => s.setSecondaryView);
+  const toggleSecondary = useUi((s) => s.toggleSecondary);
+
+  return (
+    <aside
+      className="flex w-[300px] shrink-0 flex-col overflow-hidden border-l border-border bg-surface"
+      data-testid="secondary-sidebar"
+      aria-label={t("secondary.title")}
+    >
+      <div className="flex h-8 shrink-0 items-center gap-1 border-b border-border px-1.5">
+        <ViewTab
+          active={view === "chat"}
+          label={t("secondary.chat")}
+          testId="secondary-tab-chat"
+          onClick={() => setView("chat")}
+        />
+        <ViewTab
+          active={view === "changes"}
+          label={t("secondary.changes")}
+          testId="secondary-tab-changes"
+          onClick={() => setView("changes")}
+        />
+        <button
+          type="button"
+          onClick={toggleSecondary}
+          aria-label={t("common.close")}
+          title={t("common.close")}
+          className="ml-auto rounded px-1 text-text-dim hover:bg-surface-2 hover:text-text"
+        >
+          ✕
+        </button>
+      </div>
+      <div className="min-h-0 flex-1">
+        {view === "chat" ? <ChatView compact /> : <ChangesView />}
+      </div>
+    </aside>
+  );
+}
+
+function ViewTab({
+  active,
+  label,
+  testId,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  testId: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      data-testid={testId}
+      aria-pressed={active}
+      onClick={onClick}
+      className={`rounded-sm px-2 py-0.5 text-[11px] font-medium ${
+        active
+          ? "bg-surface-2 text-text"
+          : "text-text-dim hover:bg-surface-2/60 hover:text-text"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function ChangesView() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const openFile = useUi((s) => s.openFile);
   const setNotice = useUi((s) => s.setNotice);
-  const toggleSecondary = useUi((s) => s.toggleSecondary);
 
   const patches = useQuery({
     queryKey: ["apk", "patchPaths"],
@@ -49,17 +119,10 @@ export function SecondarySidebar() {
   const busy = revertMut.isPending || revertAllMut.isPending;
 
   return (
-    <aside
-      className="flex w-[280px] shrink-0 flex-col overflow-hidden border-l border-border bg-surface"
-      data-testid="secondary-sidebar"
-      aria-label={t("secondary.title")}
-    >
-      <div className="flex h-8 shrink-0 items-center gap-1.5 border-b border-border px-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-text-dim">
-          {t("secondary.title")}
-        </span>
-        <span className="rounded-full bg-surface-2 px-1.5 text-[10px] text-text-dim">
-          {paths.length}
+    <div className="flex h-full min-h-0 flex-col" data-testid="secondary-changes">
+      <div className="flex items-center gap-1.5 px-2 pt-1.5">
+        <span className="text-[10px] text-text-dim">
+          {t("secondary.count", { count: paths.length })}
         </span>
         <button
           type="button"
@@ -68,15 +131,6 @@ export function SecondarySidebar() {
           className="ml-auto rounded px-1 py-0.5 text-[10px] text-danger/80 hover:bg-danger/10 disabled:opacity-40"
         >
           {t("secondary.revertAll")}
-        </button>
-        <button
-          type="button"
-          onClick={toggleSecondary}
-          aria-label={t("common.close")}
-          title={t("common.close")}
-          className="rounded px-1 text-text-dim hover:bg-surface-2 hover:text-text"
-        >
-          ✕
         </button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-1">
@@ -116,6 +170,6 @@ export function SecondarySidebar() {
           </ul>
         )}
       </div>
-    </aside>
+    </div>
   );
 }

@@ -36,8 +36,9 @@ interface UiState {
   /** IDE layout. */
   explorerOpen: boolean;
   bottomOpen: boolean;
-  /** VS Code-style secondary (right) sidebar — pending changes view. */
+  /** VS Code-style secondary (right) sidebar — chat / changes view container. */
   secondaryOpen: boolean;
+  secondaryView: "chat" | "changes";
   explorerWidth: number;
   bottomHeight: number;
   activeBottomTab: BottomTab;
@@ -72,6 +73,8 @@ interface UiState {
   toggleExplorer: () => void;
   toggleBottom: () => void;
   toggleSecondary: () => void;
+  setSecondaryView: (v: "chat" | "changes") => void;
+  openSecondaryView: (v: "chat" | "changes") => void;
   setExplorerWidth: (w: number) => void;
   setBottomHeight: (h: number) => void;
   setActiveBottomTab: (t: BottomTab) => void;
@@ -103,6 +106,7 @@ export const useUi = create<UiState>((set) => ({
   explorerOpen: true,
   bottomOpen: false,
   secondaryOpen: false,
+  secondaryView: "chat",
   explorerWidth: clamp(288, EXPLORER_WIDTH.min, EXPLORER_WIDTH.max),
   bottomHeight: clamp(220, BOTTOM_HEIGHT.min, BOTTOM_HEIGHT.max),
   activeBottomTab: "terminal",
@@ -157,6 +161,8 @@ export const useUi = create<UiState>((set) => ({
   toggleExplorer: () => set((s) => ({ explorerOpen: !s.explorerOpen })),
   toggleBottom: () => set((s) => ({ bottomOpen: !s.bottomOpen })),
   toggleSecondary: () => set((s) => ({ secondaryOpen: !s.secondaryOpen })),
+  setSecondaryView: (secondaryView) => set({ secondaryView }),
+  openSecondaryView: (secondaryView) => set({ secondaryView, secondaryOpen: true }),
   setExplorerWidth: (w) =>
     set({ explorerWidth: clamp(w, EXPLORER_WIDTH.min, EXPLORER_WIDTH.max) }),
   setBottomHeight: (h) =>

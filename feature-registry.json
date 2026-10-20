@@ -308,13 +308,26 @@
     },
     {
       "id": "secondary-sidebar-changes",
-      "title": "VS Code-style secondary (right) sidebar with a real Changes view: pending patch paths, open on click, revert one/all",
+      "title": "VS Code-style secondary (right) sidebar as a view container: Chat (shared AI conversation) and Changes (pending patches, open/revert) tabs",
       "phase": 3,
       "status": "real",
       "evidence": [
-        "apps/desktop SecondarySidebar.tsx: apkPatchPaths query, apkRevertEntry / apkRevertAll mutations with ['apk'] invalidation, file-type icons, honest empty/no-session states, close button",
-        "Mounted in App.tsx only on the Explorer page while ui.secondaryOpen; width-bounded aside with data-testid='secondary-sidebar'",
-        "pnpm typecheck/lint green this session"
+        "apps/desktop SecondarySidebar.tsx: Chat | Changes view tabs (ui.secondaryView), apkPatchPaths query, apkRevertEntry / apkRevertAll mutations with ['apk'] invalidation, file-type icons, honest empty/no-session states, close button",
+        "lib/chat-store.ts: one shared AI conversation (module store) so sidebar and AI page never lose messages; streams continue while the panel is closed; real provider via ai_chat_start, stop button cancels the stream",
+        "Title bar AI chip toggles the Chat view open/closed (Ctrl+Alt+B toggles the container); View menu exposes both; mounted in App.tsx on the Explorer page while ui.secondaryOpen",
+        "WebView2 CDP E2E on the packaged exe: chat open/close, changes switch, panel toggle, settings round-trip, manifest.json open (Monaco) — all passed with zero console errors",
+        "pnpm typecheck/lint/test green this session"
+      ]
+    },
+    {
+      "id": "window-title-and-capabilities",
+      "title": "Native window title follows the active file (ACL) and a strict CSP still allows Tauri IPC",
+      "phase": 3,
+      "status": "real",
+      "evidence": [
+        "capabilities/default.json: core:window:allow-set-title + core:window:allow-close (they are NOT in core:window:default, so setTitle/close had been failing silently)",
+        "tauri.conf.json CSP: connect-src ipc: http://ipc.localhost added, removing CSP violations for IPC fetches",
+        "E2E probe: plugin:window|title returns 'manifest.json — CatDot Studio' after opening the file in the packaged app"
       ]
     }
   ]

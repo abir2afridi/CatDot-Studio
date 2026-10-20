@@ -135,6 +135,7 @@ export function TitleBarActions() {
   const explorerOpen = useUi((s) => s.explorerOpen);
   const bottomOpen = useUi((s) => s.bottomOpen);
   const secondaryOpen = useUi((s) => s.secondaryOpen);
+  const secondaryView = useUi((s) => s.secondaryView);
   const toggleBottom = useUi((s) => s.toggleBottom);
   const setPage = useUi((s) => s.setPage);
   const setPaletteOpen = useUi((s) => s.setPaletteOpen);
@@ -144,6 +145,14 @@ export function TitleBarActions() {
   const goForward = useUi((s) => s.goForward);
 
   const sidebarsVisible = page === "explorer";
+
+  /** Toggle the Chat view in the secondary sidebar (VS Code chat button). */
+  const toggleChatView = () => {
+    const ui = useUi.getState();
+    if (ui.page !== "explorer") ui.setPage("explorer");
+    if (ui.secondaryOpen && ui.secondaryView === "chat") ui.toggleSecondary();
+    else ui.openSecondaryView("chat");
+  };
 
   return (
     <div className="flex items-center gap-1.5">
@@ -201,10 +210,10 @@ export function TitleBarActions() {
         </IconButton>
       </div>
       <IconButton
-        label={t("nav.ai")}
+        label={t("titlebar.aiChat")}
         testId="tba-ai"
-        pressed={page === "ai"}
-        onClick={() => setPage("ai")}
+        pressed={sidebarsVisible && secondaryOpen && secondaryView === "chat"}
+        onClick={toggleChatView}
       >
         <AiIcon />
       </IconButton>

@@ -102,6 +102,15 @@ function buildViewMenu(c: Ctx): MenuItem[] {
       shortcut: "Ctrl+Alt+B",
       run: () => showSecondary(),
     },
+    {
+      key: "view.chat",
+      title: c.t("titlebar.aiChat"),
+      run: () => {
+        const ui = useUi.getState();
+        if (ui.page !== "explorer") ui.setPage("explorer");
+        ui.openSecondaryView("chat");
+      },
+    },
     { ...c.tab("terminal", c.t("panel.terminal")), separator: true },
     c.tab("logs", c.t("panel.logs")),
     c.tab("build", c.t("panel.build")),
