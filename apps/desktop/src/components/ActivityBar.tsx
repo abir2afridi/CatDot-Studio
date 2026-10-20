@@ -9,9 +9,6 @@ const icons: Record<Page, React.ReactNode> = {
   explorer: (
     <path d="M10.5 2H2v12h12V5.5L10.5 2ZM8 3v3h5v1H8V3Zm5 10H3V3h3v5h7v5Z" />
   ),
-  ai: (
-    <path d="M8 1l1.8 4.2L14 7l-4.2 1.8L8 13l-1.8-4.2L2 7l4.2-1.8L8 1Z" />
-  ),
   devices: (
     <path d="M5.2 1h5.6c.66 0 1.2.54 1.2 1.2v11.6c0 .66-.54 1.2-1.2 1.2H5.2A1.2 1.2 0 0 1 4 13.8V2.2C4 1.54 4.54 1 5.2 1Zm.3 2v9h5V3h-5Zm2.5 10.1a.75.75 0 1 0 .01 1.5.75.75 0 0 0-.01-1.5Z" />
   ),
@@ -31,7 +28,6 @@ interface Item {
 const items: Item[] = [
   { id: "guided", labelKey: "nav.guided" },
   { id: "explorer", labelKey: "nav.explorer" },
-  { id: "ai", labelKey: "nav.ai" },
   { id: "devices", labelKey: "nav.devices" },
   { id: "system", labelKey: "nav.system" },
   { id: "settings", labelKey: "nav.settings" },

@@ -13,7 +13,6 @@ export const en = {
   nav: {
     guided: "Guided Mode",
     explorer: "Explorer",
-    ai: "AI assistant",
     devices: "Devices",
     system: "System check",
     settings: "Settings",
@@ -306,7 +305,6 @@ export const en = {
     noOriginal: "No APK imported yet",
     noSigned: "No signed build yet",
     goExplorer: "Go to Explorer",
-    goAi: "Go to AI Assistant",
     goDevices: "Go to Devices",
     goSystem: "Go to System Check",
     goSettings: "Go to Settings",
@@ -340,7 +338,6 @@ export const bn: typeof en = {
   nav: {
     guided: "গাইডেড মোড",
     explorer: "এক্সপ্লোরার",
-    ai: "এআই সহকারী",
     devices: "ডিভাইস",
     system: "সিস্টেম পরীক্ষা",
     settings: "সেটিংস",
@@ -634,7 +631,6 @@ export const bn: typeof en = {
     noOriginal: "এখনো কোনো এপিকে ইমপোর্ট করা হয়নি",
     noSigned: "এখনো কোনো সাইন করা বিল্ড নেই",
     goExplorer: "এক্সপ্লোরারে যান",
-    goAi: "এআই সহকারীতে যান",
     goDevices: "ডিভাইসে যান",
     goSystem: "সিস্টেম পরীক্ষায় যান",
     goSettings: "সেটিংসে যান",

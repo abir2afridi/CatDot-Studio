@@ -5,13 +5,12 @@ import { EditorArea } from "./components/EditorArea";
 import { Explorer } from "./components/Explorer";
 import { BottomPanel } from "./components/BottomPanel";
 import { MenuBar } from "./components/MenuBar";
-import { BottomResizeHandle, SidebarResizeHandle, useLayoutPersistence } from "./components/ResizeHandles";
+import { BottomResizeHandle, SecondaryResizeHandle, SidebarResizeHandle, useLayoutPersistence } from "./components/ResizeHandles";
 import { CommandPalette } from "./components/CommandPalette";
 import { SecondarySidebar } from "./components/SecondarySidebar";
 import { StatusBar } from "./components/StatusBar";
 import { SystemCheckPage } from "./pages/SystemCheckPage";
 import { SettingsPage } from "./pages/SettingsPage";
-import { AiChatPage } from "./pages/AiChatPage";
 import { GuidedPage } from "./pages/GuidedPage";
 import { DevicesPage } from "./pages/DevicesPage";
 import { useUi } from "./state/ui";
@@ -26,8 +25,6 @@ function MainContent() {
   switch (page) {
     case "guided":
       return <GuidedPage />;
-    case "ai":
-      return <AiChatPage />;
     case "devices":
       return <DevicesPage />;
     case "system":
@@ -134,7 +131,12 @@ export default function App() {
             </>
           )}
         </main>
-        {showExplorerSidebar && secondaryOpen && <SecondarySidebar />}
+        {secondaryOpen && (
+          <>
+            <SecondaryResizeHandle />
+            <SecondarySidebar />
+          </>
+        )}
       </div>
       <StatusBar />
       <CommandPalette />

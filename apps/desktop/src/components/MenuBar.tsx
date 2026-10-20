@@ -105,11 +105,7 @@ function buildViewMenu(c: Ctx): MenuItem[] {
     {
       key: "view.chat",
       title: c.t("titlebar.aiChat"),
-      run: () => {
-        const ui = useUi.getState();
-        if (ui.page !== "explorer") ui.setPage("explorer");
-        ui.openSecondaryView("chat");
-      },
+      run: () => useUi.getState().openSecondaryView("chat"),
     },
     { ...c.tab("terminal", c.t("panel.terminal")), separator: true },
     c.tab("logs", c.t("panel.logs")),
@@ -153,7 +149,6 @@ function buildGoMenu(c: Ctx): MenuItem[] {
     ...pick(
       c.cmd("view.guided"),
       c.cmd("view.explorer"),
-      c.cmd("view.ai"),
       c.cmd("view.devices"),
       c.cmd("view.system"),
       c.cmd("view.settings"),

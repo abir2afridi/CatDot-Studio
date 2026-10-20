@@ -151,7 +151,6 @@ export function useCommands(): PaletteCommand[] {
         [
           { id: "view.guided", titleKey: "cmd.goGuided", run: () => setPage("guided") },
           { id: "view.explorer", titleKey: "cmd.goExplorer", run: () => setPage("explorer") },
-          { id: "view.ai", titleKey: "cmd.goAi", run: () => setPage("ai") },
           { id: "view.devices", titleKey: "cmd.goDevices", run: () => setPage("devices") },
           { id: "view.system", titleKey: "cmd.goSystem", run: () => setPage("system") },
           { id: "view.settings", titleKey: "cmd.goSettings", run: () => setPage("settings") },

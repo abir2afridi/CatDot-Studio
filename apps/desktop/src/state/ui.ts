@@ -3,7 +3,7 @@
 // per-file unsaved drafts, and the IDE layout (sidebar/bottom panel).
 import { create } from "zustand";
 
-export type Page = "guided" | "explorer" | "ai" | "devices" | "system" | "settings";
+export type Page = "guided" | "explorer" | "devices" | "system" | "settings";
 export type BottomTab = "terminal" | "logs" | "build" | "diff" | "device" | "manifest" | "problems";
 import type { BuildReport } from "@catdot/shared-types";
 
@@ -39,6 +39,7 @@ interface UiState {
   /** VS Code-style secondary (right) sidebar — chat / changes view container. */
   secondaryOpen: boolean;
   secondaryView: "chat" | "changes";
+  secondaryWidth: number;
   explorerWidth: number;
   bottomHeight: number;
   activeBottomTab: BottomTab;
@@ -75,6 +76,7 @@ interface UiState {
   toggleSecondary: () => void;
   setSecondaryView: (v: "chat" | "changes") => void;
   openSecondaryView: (v: "chat" | "changes") => void;
+  setSecondaryWidth: (w: number) => void;
   setExplorerWidth: (w: number) => void;
   setBottomHeight: (h: number) => void;
   setActiveBottomTab: (t: BottomTab) => void;
@@ -95,6 +97,7 @@ const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n
 
 export const EXPLORER_WIDTH = { min: 180, max: 640 } as const;
 export const BOTTOM_HEIGHT = { min: 120, max: 480 } as const;
+export const SECONDARY_WIDTH = { min: 240, max: 560 } as const;
 
 export const useUi = create<UiState>((set) => ({
   page: "explorer",
@@ -107,6 +110,7 @@ export const useUi = create<UiState>((set) => ({
   bottomOpen: false,
   secondaryOpen: false,
   secondaryView: "chat",
+  secondaryWidth: clamp(300, SECONDARY_WIDTH.min, SECONDARY_WIDTH.max),
   explorerWidth: clamp(288, EXPLORER_WIDTH.min, EXPLORER_WIDTH.max),
   bottomHeight: clamp(220, BOTTOM_HEIGHT.min, BOTTOM_HEIGHT.max),
   activeBottomTab: "terminal",
@@ -163,6 +167,8 @@ export const useUi = create<UiState>((set) => ({
   toggleSecondary: () => set((s) => ({ secondaryOpen: !s.secondaryOpen })),
   setSecondaryView: (secondaryView) => set({ secondaryView }),
   openSecondaryView: (secondaryView) => set({ secondaryView, secondaryOpen: true }),
+  setSecondaryWidth: (w) =>
+    set({ secondaryWidth: clamp(w, SECONDARY_WIDTH.min, SECONDARY_WIDTH.max) }),
   setExplorerWidth: (w) =>
     set({ explorerWidth: clamp(w, EXPLORER_WIDTH.min, EXPLORER_WIDTH.max) }),
   setBottomHeight: (h) =>

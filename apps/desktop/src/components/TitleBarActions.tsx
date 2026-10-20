@@ -117,14 +117,9 @@ function showSidebar(): void {
   }
 }
 
+/** Toggle the secondary sidebar; it is available on every page (like VS Code). */
 function showSecondary(): void {
-  const ui = useUi.getState();
-  if (ui.page === "explorer") {
-    ui.toggleSecondary();
-  } else {
-    ui.setPage("explorer");
-    if (!ui.secondaryOpen) ui.toggleSecondary();
-  }
+  useUi.getState().toggleSecondary();
 }
 
 export { showSidebar, showSecondary };
@@ -149,7 +144,6 @@ export function TitleBarActions() {
   /** Toggle the Chat view in the secondary sidebar (VS Code chat button). */
   const toggleChatView = () => {
     const ui = useUi.getState();
-    if (ui.page !== "explorer") ui.setPage("explorer");
     if (ui.secondaryOpen && ui.secondaryView === "chat") ui.toggleSecondary();
     else ui.openSecondaryView("chat");
   };
@@ -203,7 +197,7 @@ export function TitleBarActions() {
         <IconButton
           label={t("titlebar.toggleSecondary")}
           testId="tba-secondary"
-          pressed={sidebarsVisible && secondaryOpen}
+          pressed={secondaryOpen}
           onClick={showSecondary}
         >
           <PanelRightIcon />
@@ -212,7 +206,7 @@ export function TitleBarActions() {
       <IconButton
         label={t("titlebar.aiChat")}
         testId="tba-ai"
-        pressed={sidebarsVisible && secondaryOpen && secondaryView === "chat"}
+        pressed={secondaryOpen && secondaryView === "chat"}
         onClick={toggleChatView}
       >
         <AiIcon />

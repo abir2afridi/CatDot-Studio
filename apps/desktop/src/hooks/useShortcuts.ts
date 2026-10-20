@@ -16,12 +16,7 @@ export function useShortcuts(): void {
       // Ctrl+Alt+B — toggle the secondary (right) sidebar.
       if (e.ctrlKey && e.altKey && !e.shiftKey && e.key.toLowerCase() === "b") {
         e.preventDefault();
-        if (ui.page === "explorer") {
-          ui.toggleSecondary();
-        } else {
-          ui.setPage("explorer");
-          if (!ui.secondaryOpen) ui.toggleSecondary();
-        }
+        ui.toggleSecondary();
         return;
       }
 

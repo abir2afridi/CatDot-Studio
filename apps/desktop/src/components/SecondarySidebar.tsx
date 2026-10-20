@@ -18,10 +18,12 @@ export function SecondarySidebar() {
   const view = useUi((s) => s.secondaryView);
   const setView = useUi((s) => s.setSecondaryView);
   const toggleSecondary = useUi((s) => s.toggleSecondary);
+  const width = useUi((s) => s.secondaryWidth);
 
   return (
     <aside
-      className="flex w-[300px] shrink-0 flex-col overflow-hidden border-l border-border bg-surface"
+      className="flex shrink-0 flex-col overflow-hidden border-l border-border bg-surface"
+      style={{ width }}
       data-testid="secondary-sidebar"
       aria-label={t("secondary.title")}
     >
@@ -40,6 +42,7 @@ export function SecondarySidebar() {
         />
         <button
           type="button"
+          data-testid="secondary-close"
           onClick={toggleSecondary}
           aria-label={t("common.close")}
           title={t("common.close")}

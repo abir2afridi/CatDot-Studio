@@ -2,7 +2,7 @@
 // resize for the sidebar (horizontal) and bottom panel (vertical). The final
 // value on mouse release is persisted through the settings IPC.
 import { useEffect } from "react";
-import { BOTTOM_HEIGHT, EXPLORER_WIDTH, useUi } from "../state/ui";
+import { BOTTOM_HEIGHT, EXPLORER_WIDTH, SECONDARY_WIDTH, useUi } from "../state/ui";
 import { settingsGet, settingsSet } from "../lib/ipc";
 
 export function SidebarResizeHandle() {
@@ -47,7 +47,28 @@ export function BottomResizeHandle() {
   );
 }
 
-type Axis = "x" | "y";
+export function SecondaryResizeHandle() {
+  return (
+    <div
+      role="separator"
+      aria-orientation="vertical"
+      tabIndex={0}
+      title={useUi.getState().secondaryWidth.toString()}
+      className="w-1 cursor-col-resize bg-border hover:bg-accent/40 focus:bg-accent/60 focus:outline-none"
+      onMouseDown={beginResize("s")}
+      onKeyDown={(e) => {
+        const w = useUi.getState().secondaryWidth;
+        if (e.key === "ArrowLeft") {
+          useUi.getState().setSecondaryWidth(w + 16);
+        } else if (e.key === "ArrowRight") {
+          useUi.getState().setSecondaryWidth(w - 16);
+        }
+      }}
+    />
+  );
+}
+
+type Axis = "x" | "y" | "s";
 
 function beginResize(axis: Axis): (e: React.MouseEvent) => void {
   return (down) => {
@@ -57,6 +78,9 @@ function beginResize(axis: Axis): (e: React.MouseEvent) => void {
       if (axis === "x") {
         // mouse X minus the activity-bar width (56px) = sidebar width
         useUi.getState().setExplorerWidth(e.clientX - 56);
+      } else if (axis === "s") {
+        // right sidebar: distance from the pointer to the window's right edge
+        useUi.getState().setSecondaryWidth(window.innerWidth - e.clientX);
       } else {
         // bottom panel: the mouse Y directly defines the panel height
         useUi.getState().setBottomHeight(window.innerHeight - e.clientY);
@@ -73,31 +97,41 @@ function beginResize(axis: Axis): (e: React.MouseEvent) => void {
 
 /** Persist the current layout value (debounced by the mouse-release event). */
 function persist(axis: Axis): Promise<unknown> {
-  const { explorerWidth, bottomHeight } = useUi.getState();
-  return axis === "x"
-    ? settingsSet("ui.explorerWidth", Math.round(clampW(explorerWidth)))
-    : settingsSet("ui.bottomHeight", Math.round(clampH(bottomHeight)));
+  const { explorerWidth, bottomHeight, secondaryWidth } = useUi.getState();
+  if (axis === "x") {
+    return settingsSet("ui.explorerWidth", Math.round(clampW(explorerWidth)));
+  }
+  if (axis === "s") {
+    return settingsSet("ui.secondaryWidth", Math.round(clampS(secondaryWidth)));
+  }
+  return settingsSet("ui.bottomHeight", Math.round(clampH(bottomHeight)));
 }
 
 const clampW = (n: number) =>
   Math.min(Math.max(n, EXPLORER_WIDTH.min), EXPLORER_WIDTH.max);
 const clampH = (n: number) =>
   Math.min(Math.max(n, BOTTOM_HEIGHT.min), BOTTOM_HEIGHT.max);
+const clampS = (n: number) =>
+  Math.min(Math.max(n, SECONDARY_WIDTH.min), SECONDARY_WIDTH.max);
 
 /** Restore persisted layout once at startup (misses = defaults kept). */
 export function useLayoutPersistence(): void {
   useEffect(() => {
     void (async () => {
       const ui = useUi.getState();
-      const [width, height] = await Promise.all([
+      const [width, height, secondary] = await Promise.all([
         settingsGet("ui.explorerWidth").catch(() => null),
         settingsGet("ui.bottomHeight").catch(() => null),
+        settingsGet("ui.secondaryWidth").catch(() => null),
       ]);
       if (typeof width === "number" && Number.isFinite(width)) {
         ui.setExplorerWidth(width);
       }
       if (typeof height === "number" && Number.isFinite(height)) {
         ui.setBottomHeight(height);
+      }
+      if (typeof secondary === "number" && Number.isFinite(secondary)) {
+        ui.setSecondaryWidth(secondary);
       }
     })();
   }, []);
