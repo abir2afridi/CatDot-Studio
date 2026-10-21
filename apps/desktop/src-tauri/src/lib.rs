@@ -65,6 +65,7 @@ pub fn run() {
                 logs,
             });
             app.manage(apk_commands::ApkState::default());
+            app.manage(apk_commands::DecodeState::default());
             app.manage(term_commands::TermState(
                 std::sync::Mutex::new(std::collections::HashMap::new()),
             ));
@@ -106,6 +107,9 @@ pub fn run() {
             apk_commands::apk_replace_all,
             apk_commands::apk_manifest,
             apk_commands::apk_decode,
+            apk_commands::apk_decode_start,
+            apk_commands::apk_decode_status,
+            apk_commands::apk_decode_cancel,
             apk_commands::apk_set_label,
             apk_commands::apk_toggle_permission,
             apk_commands::apk_set_version,

@@ -8,6 +8,8 @@ export type { AiStreamEvent } from "./generated/AiStreamEvent";
 export type { ApkEntry } from "./generated/ApkEntry";
 export type { ApkReport } from "./generated/ApkReport";
 export type { ApkReplaceResult } from "./generated/ApkReplaceResult";
+export type { DecodedSources } from "./generated/DecodedSources";
+export type { DecodeStatus } from "./generated/DecodeStatus";
 export type { ApkSearchHit } from "./generated/ApkSearchHit";
 export type { ApkSearchResult } from "./generated/ApkSearchResult";
 export type { ApkStatus } from "./generated/ApkStatus";

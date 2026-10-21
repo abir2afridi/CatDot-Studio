@@ -49,6 +49,21 @@ pub struct TermInfo {
     pub shell: String,
 }
 
+/// Live status of the asynchronous decode job (UI polls while running).
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export)]
+pub struct DecodeStatus {
+    pub running: bool,
+    pub finished: bool,
+    pub ok: bool,
+    pub cancelled: bool,
+    pub files: u32,
+    pub phase: String,
+    pub elapsed_secs: u32,
+    pub message: String,
+    pub error: Option<String>,
+}
+
 /// One saved workspace state (Part F4 change history, not Git).
 #[derive(Debug, Clone, Serialize, TS)]
 #[ts(export)]

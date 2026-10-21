@@ -5,23 +5,27 @@
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::time::Instant;
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
 
-use catdot_core::apk_types::{ApkStatus, CheckpointInfo, ExportResult, OpenedFile};
+use catdot_core::apk_types::{ApkStatus, CheckpointInfo, DecodeStatus, ExportResult, OpenedFile};
 use catdot_core::errors::{AppError, ErrorCode};
 use catdot_core::security::policy::{check, AccessLevel, Autonomy, Decision, RiskTier};
 use catdot_core::tools::{
-    align_and_sign, decode, device_tools, edit_ops, ensure_keystore, rebuild, tool_paths, BuildReport,
+    align_and_sign, decode, decode_cancellable, device_tools, edit_ops, ensure_keystore, rebuild,
+    tool_paths, BuildReport, DecodeProgress,
 };
 use catdot_core::workspace::{
     apply_decoded_patches, export_apk, import_apk, patch_summary, read_entry, report_of,
-    replace_in_entries, search_entries, sha256_str, split_decoded_patches, ApkEntry, ApkReport,
+    replace_in_entries, search_entries, sha256_str, split_decoded_patches, ApkReport,
     ApkReplaceResult, ApkSearchResult, Patch, PatchSummary, MAX_SEARCH_HITS, MAX_TEXT_BYTES,
 };
 use catdot_core::decoded;
+use catdot_core::bundle;
 
 use crate::AppState;
 
@@ -38,6 +42,54 @@ pub struct ApkState(pub Mutex<Option<ApkSession>>);
 impl Default for ApkState {
     fn default() -> Self {
         Self(Mutex::new(None))
+    }
+}
+
+/// Async decode job state (in-memory; a restart marks it gone, never fake).
+struct DecodeJob {
+    running: Arc<AtomicBool>,
+    cancel: Arc<AtomicBool>,
+    cancelled: Arc<AtomicBool>,
+    progress: Arc<DecodeProgress>,
+    started: Instant,
+    message: Arc<Mutex<String>>,
+    error: Arc<Mutex<Option<String>>>,
+}
+
+#[derive(Default)]
+pub struct DecodeState(Mutex<Option<DecodeJob>>);
+
+fn decode_status(job: Option<&DecodeJob>) -> DecodeStatus {
+    let Some(j) = job else {
+        return DecodeStatus {
+            running: false,
+            finished: false,
+            ok: false,
+            cancelled: false,
+            files: 0,
+            phase: String::new(),
+            elapsed_secs: 0,
+            message: String::new(),
+            error: None,
+        };
+    };
+    let (phase, files) = j.progress.snapshot();
+    let running = j.running.load(Ordering::SeqCst);
+    let error = j.error.lock().ok().and_then(|e| e.clone());
+    DecodeStatus {
+        running,
+        finished: !running,
+        ok: !running && error.is_none() && !j.cancelled.load(Ordering::SeqCst),
+        cancelled: j.cancelled.load(Ordering::SeqCst),
+        files,
+        phase,
+        elapsed_secs: j.started.elapsed().as_secs().min(u32::MAX as u64) as u32,
+        message: j
+            .message
+            .lock()
+            .map(|m| m.clone())
+            .unwrap_or_default(),
+        error,
     }
 }
 
@@ -249,7 +301,9 @@ pub fn apk_open_entry(
 
 /// List editable decoded text sources (`decoded/<rel>`); empty before decode.
 #[tauri::command]
-pub fn apk_decoded_entries(apk_state: State<'_, ApkState>) -> Result<Vec<ApkEntry>, AppError> {
+pub fn apk_decoded_entries(
+    apk_state: State<'_, ApkState>,
+) -> Result<decoded::DecodedSources, AppError> {
     let g = apk_lock(&apk_state)?;
     let s = g.as_ref().ok_or_else(no_session_err)?;
     decoded::list_entries(&s.ws_root.join("decoded"))
@@ -325,7 +379,8 @@ pub fn apk_patch_paths(apk_state: State<'_, ApkState>) -> Result<Vec<String>, Ap
 }
 
 /// Replace an exact string in every readable entry and record reversible
-/// patches for each changed file (bulk-edit tool; bounded by core limits).
+/// patches for each changed file. Covers the APK's text entries AND decoded
+/// sources; per-container limits bound the work and report `truncated`.
 #[tauri::command]
 pub fn apk_replace_all(
     apk_state: State<'_, ApkState>,
@@ -336,12 +391,17 @@ pub fn apk_replace_all(
     let mut g = apk_lock(&apk_state)?;
     let s = g.as_mut().ok_or_else(no_session_err)?;
     let patches = session_pairs(s);
-    let outcome = replace_in_entries(
+    let mut outcome = replace_in_entries(
         &s.ws_root.join("original.apk"),
         &patches,
         &query,
         &replacement,
     )?;
+    let dec = decoded::replace(&s.ws_root.join("decoded"), &query, &replacement)?;
+    outcome.result.replacements += dec.result.replacements;
+    outcome.result.truncated = outcome.result.truncated || dec.result.truncated;
+    outcome.result.changed_entries.extend(dec.result.changed_entries);
+    outcome.updates.extend(dec.updates);
     for update in outcome.updates {
         s.patches.insert(update.entry_path, update.content);
     }
@@ -574,7 +634,7 @@ pub fn apk_export(apk_state: State<'_, ApkState>) -> Result<ExportResult, AppErr
     // Decoded-source edits require an apktool rebuild; otherwise the fast
     // ZIP-copy path is enough. Either way the original APK is never touched.
     let sha = if decoded_pairs.is_empty() {
-        export_apk(&s.ws_root.join("original.apk"), &zip_pairs, &out)?
+        export_apk(&source_apk(s)?, &zip_pairs, &out)?
     } else {
         let rebuilt = rebuild_patched_project(s)?;
         export_apk(&rebuilt, &zip_pairs, &out)?
@@ -616,7 +676,7 @@ pub fn apk_build_sign(
             std::fs::copy(&staged, &unsigned)?;
         }
     } else {
-        export_apk(&s.ws_root.join("original.apk"), &zip_pairs, &unsigned)?;
+        export_apk(&source_apk(s)?, &zip_pairs, &unsigned)?;
     }
     let (_zipalign, _apksigner, keytool) = tool_paths()?;
     let (ks, pass, alias) = ensure_keystore(&data_dir(&app)?, &keytool)?;
@@ -625,17 +685,31 @@ pub fn apk_build_sign(
     align_and_sign(&unsigned, &aligned, &signed, &s.ws_root, &ks, &pass, &alias)
 }
 
+/// The installable APK to decode/build: the imported APK itself, or the cached
+/// base APK extracted from an XAPK bundle (original stays read-only).
+fn source_apk(s: &ApkSession) -> Result<PathBuf, AppError> {
+    Ok(bundle::resolve_source_apk(
+        &s.ws_root.join("original.apk"),
+        &s.ws_root,
+        &s.base_sha,
+    )?
+    .path)
+}
+
 /// Fresh decode of the immutable original + apply the session's decoded-tree
 /// patches + `apktool b`. Deterministic: the physical decoded dir is never a
-/// build input.
+/// build input, so reverting a patch after a build still matches what the UI
+/// reads from the working copy. The temp tree is removed after the rebuild.
 fn rebuild_patched_project(s: &ApkSession) -> Result<PathBuf, AppError> {
-    let decoded = s.ws_root.join("decoded");
-    decode(&s.ws_root.join("original.apk"), &decoded)?;
+    let tmp = s.ws_root.join("build-tmp");
+    let _ = std::fs::remove_dir_all(&tmp);
+    decode(&source_apk(s)?, &tmp)?;
     let all_pairs = session_pairs(s);
     let (decoded_pairs, _) = split_decoded_patches(&all_pairs);
-    apply_decoded_patches(&decoded, &decoded_pairs)?;
+    apply_decoded_patches(&tmp, &decoded_pairs)?;
     let rebuilt = s.ws_root.join("rebuilt.apk");
-    rebuild(&decoded, &rebuilt)?;
+    rebuild(&tmp, &rebuilt)?;
+    let _ = std::fs::remove_dir_all(&tmp);
     Ok(rebuilt)
 }
 
@@ -682,7 +756,7 @@ pub fn apk_manifest(
 fn ensure_decoded(s: &ApkSession) -> Result<PathBuf, AppError> {
     let decoded = s.ws_root.join("decoded");
     if !decoded.join("AndroidManifest.xml").is_file() {
-        decode(&s.ws_root.join("original.apk"), &decoded)?;
+        decode(&source_apk(s)?, &decoded)?;
     }
     Ok(decoded)
 }
@@ -704,14 +778,157 @@ fn load_manifest(decoded: &Path) -> Result<String, AppError> {
     })
 }
 
+/// Start decoding in a background thread; poll `apk_decode_status` for real
+/// progress and use `apk_decode_cancel` to kill the apktool process tree.
+#[tauri::command]
+pub fn apk_decode_start(
+    apk_state: State<'_, ApkState>,
+    decode_state: State<'_, DecodeState>,
+) -> Result<DecodeStatus, AppError> {
+    require_allow(AccessLevel::L3EditWithApproval, RiskTier::Edit)?;
+    let mut slot = decode_state
+        .0
+        .lock()
+        .map_err(|_| internal_err("decode state lock poisoned"))?;
+    if let Some(j) = slot.as_ref() {
+        if j.running.load(Ordering::SeqCst) {
+            return Ok(decode_status(Some(j)));
+        }
+    }
+    let (ws, sha) = {
+        let g = apk_lock(&apk_state)?;
+        let s = g.as_ref().ok_or_else(no_session_err)?;
+        (s.ws_root.clone(), s.base_sha.clone())
+    };
+    let decoded = ws.join("decoded");
+    if decoded.join("AndroidManifest.xml").is_file() {
+        let files = count_decoded_files(&decoded);
+        return Ok(DecodeStatus {
+            running: false,
+            finished: true,
+            ok: true,
+            cancelled: false,
+            files: files.min(u32::MAX as usize) as u32,
+            phase: "done".into(),
+            elapsed_secs: 0,
+            message: format!("already decoded - {files} files"),
+            error: None,
+        });
+    }
+    let src = bundle::resolve_source_apk(&ws.join("original.apk"), &ws, &sha)?;
+    let note = src
+        .base_entry
+        .clone()
+        .map(|n| format!(" (XAPK base: {n})"))
+        .unwrap_or_default();
+
+    let running = Arc::new(AtomicBool::new(true));
+    let cancel = Arc::new(AtomicBool::new(false));
+    let cancelled = Arc::new(AtomicBool::new(false));
+    let progress = Arc::new(DecodeProgress::default());
+    let message = Arc::new(Mutex::new("decoding".to_string()));
+    let error = Arc::new(Mutex::new(None::<String>));
+
+    let t_running = running.clone();
+    let t_cancel = cancel.clone();
+    let t_cancelled = cancelled.clone();
+    let t_progress = progress.clone();
+    let t_message = message.clone();
+    let t_error = error.clone();
+    let src_path = src.path;
+    let spawned = std::thread::Builder::new()
+        .name("apk-decode".into())
+        .spawn(move || {
+            let res = decode_cancellable(&src_path, &decoded, &t_cancel, &t_progress);
+            match res {
+                Ok(n) => {
+                    if let Ok(mut m) = t_message.lock() {
+                        *m = format!("decoded ready - {n} files{note}");
+                    }
+                }
+                Err(e) => {
+                    let cancelled_now = e.code == ErrorCode::ToolCancelled;
+                    if cancelled_now {
+                        t_cancelled.store(true, Ordering::SeqCst);
+                    }
+                    if let Ok(mut m) = t_message.lock() {
+                        *m = if cancelled_now {
+                            "decoding cancelled".into()
+                        } else {
+                            "decode failed".into()
+                        };
+                    }
+                    if !cancelled_now {
+                        if let Ok(mut slot) = t_error.lock() {
+                            *slot = Some(e.user_message);
+                        }
+                    }
+                }
+            }
+            t_running.store(false, Ordering::SeqCst);
+        });
+    if let Err(e) = spawned {
+        return Err(internal_err(format!("cannot start decode thread: {e}")));
+    }
+
+    let job = DecodeJob {
+        running,
+        cancel,
+        cancelled,
+        progress,
+        started: Instant::now(),
+        message,
+        error,
+    };
+    *slot = Some(job);
+    Ok(decode_status(slot.as_ref()))
+}
+
+/// Poll the background decode job (cheap; UI calls this once per second).
+#[tauri::command]
+pub fn apk_decode_status(
+    decode_state: State<'_, DecodeState>,
+) -> Result<DecodeStatus, AppError> {
+    let g = decode_state
+        .0
+        .lock()
+        .map_err(|_| internal_err("decode state lock poisoned"))?;
+    Ok(decode_status(g.as_ref()))
+}
+
+/// Request cancellation; the worker kills the process tree and reports
+/// `cancelled` on the next status poll.
+#[tauri::command]
+pub fn apk_decode_cancel(
+    decode_state: State<'_, DecodeState>,
+) -> Result<DecodeStatus, AppError> {
+    let g = decode_state
+        .0
+        .lock()
+        .map_err(|_| internal_err("decode state lock poisoned"))?;
+    if let Some(j) = g.as_ref() {
+        j.cancel.store(true, Ordering::SeqCst);
+    }
+    Ok(decode_status(g.as_ref()))
+}
+
 #[tauri::command]
 pub fn apk_decode(apk_state: State<'_, ApkState>) -> Result<String, AppError> {
     require_allow(AccessLevel::L3EditWithApproval, RiskTier::Edit)?;
     let g = apk_lock(&apk_state)?;
     let s = g.as_ref().ok_or_else(no_session_err)?;
+    let src = bundle::resolve_source_apk(
+        &s.ws_root.join("original.apk"),
+        &s.ws_root,
+        &s.base_sha,
+    )?;
     let decoded = ensure_decoded(s)?;
     let files = count_decoded_files(&decoded);
-    Ok(format!("decoded ready · {files} files"))
+    let note = src
+        .base_entry
+        .map(|n| format!(" (XAPK base: {n})"))
+        .unwrap_or_default();
+    Ok(format!("decoded ready - {files} files{note}"))
 }
 
 fn count_decoded_files(dir: &Path) -> usize {

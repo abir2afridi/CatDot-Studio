@@ -4,11 +4,42 @@
 //! bounded output. The jar itself is pinned in `toolchain/manifest.json`.
 
 use std::path::{Path, PathBuf};
-use std::time::Duration;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 use crate::errors::{AppError, ErrorCode};
+use crate::jobs::kill_tree;
 use crate::tools::build_tools::run_timeout;
 use crate::tools::detect::detect_toolchain;
+
+/// Live progress for a cancellable decode (phase + sampled file count).
+#[derive(Default)]
+pub struct DecodeProgress {
+    phase: Mutex<String>,
+    files: AtomicUsize,
+}
+
+impl DecodeProgress {
+    fn set_phase(&self, phase: &str) {
+        if let Ok(mut p) = self.phase.lock() {
+            *p = phase.to_string();
+        }
+    }
+    fn set_files(&self, files: usize) {
+        self.files.store(files, Ordering::Relaxed);
+    }
+    /// `(phase, files seen so far)` for the UI poll.
+    pub fn snapshot(&self) -> (String, u32) {
+        let phase = self
+            .phase
+            .lock()
+            .map(|p| p.clone())
+            .unwrap_or_else(|_| "decoding".into());
+        let files = self.files.load(Ordering::Relaxed).min(u32::MAX as usize) as u32;
+        (phase, files)
+    }
+}
 
 /// Locate the pinned apktool jar (dev download cache or explicit env). The
 /// manifest pin (version + sha256) is the source of truth.
@@ -50,6 +81,157 @@ fn java_exe() -> Result<PathBuf, AppError> {
             "What happened: no JDK/JRE found. What to do: install a JDK 17+ and re-run System check (apktool needs java).",
         )),
     }
+}
+
+/// Bounded recursive count used for live progress (never walks forever).
+fn count_files_bounded(dir: &Path, limit: usize) -> usize {
+    let mut stack = vec![dir.to_path_buf()];
+    let mut files = 0usize;
+    while let Some(d) = stack.pop() {
+        let Ok(rd) = std::fs::read_dir(&d) else { continue };
+        for entry in rd.flatten() {
+            let Ok(ft) = entry.file_type() else { continue };
+            if ft.is_dir() {
+                stack.push(entry.path());
+            } else {
+                files += 1;
+                if files >= limit {
+                    return files;
+                }
+            }
+        }
+    }
+    files
+}
+
+/// Decode with live progress and cooperative cancellation. The child process
+/// tree is killed on cancel; the destination is only trusted when the decoded
+/// manifest exists. Same 600 s hard cap as `decode`.
+pub fn decode_cancellable(
+    apk: &Path,
+    out_dir: &Path,
+    cancel: &AtomicBool,
+    progress: &DecodeProgress,
+) -> Result<u64, AppError> {
+    use std::io::Read;
+
+    let jar = apktool_jar()?;
+    let java = java_exe()?;
+    if !apk.is_file() {
+        return Err(AppError::new(
+            ErrorCode::InvalidInput,
+            "apk missing",
+            "What happened: there is no APK to decode. What to do: import an APK first.",
+        ));
+    }
+    let _ = std::fs::remove_dir_all(out_dir);
+    let mut c = std::process::Command::new(&java);
+    c.args([
+        "-jar",
+        &jar.to_string_lossy(),
+        "d",
+        "-f",
+        "-o",
+        &out_dir.to_string_lossy(),
+        &apk.to_string_lossy(),
+    ])
+    .env("JAVA_HOME", std::env::var("JAVA_HOME").unwrap_or_default())
+    .env("SystemRoot", std::env::var("SystemRoot").unwrap_or_default())
+    .stdout(std::process::Stdio::piped())
+    .stderr(std::process::Stdio::piped());
+    if let Some(parent) = out_dir.parent() {
+        c.current_dir(parent);
+    }
+    let mut child = c.spawn().map_err(|e| {
+        AppError::new(
+            ErrorCode::ToolNotFound,
+            format!("apktool spawn failed: {e}"),
+            "What happened: the decoder could not start. What to do: run the toolchain check.",
+        )
+    })?;
+    let pid = child.id();
+    let mut so = child.stdout.take();
+    let mut se = child.stderr.take();
+    let t_out = std::thread::spawn(move || {
+        let mut s = String::new();
+        if let Some(p) = so.as_mut() {
+            let _ = p.take(64 * 1024).read_to_string(&mut s);
+        }
+        s
+    });
+    let t_err = std::thread::spawn(move || {
+        let mut s = String::new();
+        if let Some(p) = se.as_mut() {
+            let _ = p.take(64 * 1024).read_to_string(&mut s);
+        }
+        s
+    });
+    progress.set_phase("decoding");
+    let deadline = Instant::now() + Duration::from_secs(600);
+    let mut sampled = Instant::now();
+    let status = loop {
+        if cancel.load(Ordering::Relaxed) {
+            kill_tree(pid);
+            let _ = child.kill();
+            let _ = child.wait();
+            let _ = t_out.join();
+            let _ = t_err.join();
+            progress.set_phase("cancelled");
+            return Err(AppError::new(
+                ErrorCode::ToolCancelled,
+                "decode cancelled",
+                "What happened: decoding was cancelled. What to do: start Decode again when ready.",
+            ));
+        }
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) => {}
+            Err(e) => {
+                kill_tree(pid);
+                return Err(AppError::new(
+                    ErrorCode::Internal,
+                    format!("decode wait failed: {e}"),
+                    "What happened: the decoder process could not be monitored. What to do: restart CatDot Studio and retry.",
+                ));
+            }
+        }
+        if Instant::now() >= deadline {
+            kill_tree(pid);
+            let _ = child.kill();
+            let _ = child.wait();
+            let _ = t_out.join();
+            let _ = t_err.join();
+            progress.set_phase("timed out");
+            return Err(AppError::new(
+                ErrorCode::Internal,
+                "apktool decode timed out",
+                "What happened: decoding took too long (600 s cap). What to do: retry; for huge APKs this can be slow on the first run (apktool may fetch its framework cache once).",
+            ));
+        }
+        if sampled.elapsed() >= Duration::from_secs(2) {
+            progress.set_files(count_files_bounded(out_dir, 100_000));
+            sampled = Instant::now();
+        }
+        std::thread::sleep(Duration::from_millis(250));
+    };
+    let out = t_out.join().unwrap_or_default();
+    let err = t_err.join().unwrap_or_default();
+    let run = format!("{err}{out}");
+    progress.set_phase("finalizing");
+    if !status.success() || !out_dir.join("AndroidManifest.xml").is_file() {
+        let head: String = run.lines().take(3).collect::<Vec<_>>().join(" | ");
+        progress.set_phase("failed");
+        return Err(AppError::new(
+            ErrorCode::Internal,
+            format!("apktool decode failed: {head}"),
+            "What happened: apktool could not decode this APK (often protection or an unsupported format). What to do: read the detail; manual text patching still works for plain-text entries.",
+        ));
+    }
+    fix_empty_resource_package(out_dir)?;
+    let files = count_files(out_dir);
+    progress.set_files(files as usize);
+    progress.set_phase("done");
+    Ok(files)
 }
 
 /// Decode `apk` into `out_dir` (fully text-editable manifest + resources).

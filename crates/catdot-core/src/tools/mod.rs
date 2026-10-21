@@ -9,7 +9,7 @@ pub mod edit_ops;
 pub mod inspect_tools;
 
 pub use build_tools::{align_and_sign, ensure_keystore, tool_paths, BuildReport, SignStep};
-pub use decode_tools::{decode, rebuild};
+pub use decode_tools::{decode, decode_cancellable, rebuild, DecodeProgress};
 pub use detect::{detect_toolchain, ToolInfo, ToolchainReport};
 pub use device_tools::{install_apk, list_devices, logcat_dump, DeviceInfo};
 pub use inspect_tools::{manifest_info, ManifestComponent, ManifestInfo};

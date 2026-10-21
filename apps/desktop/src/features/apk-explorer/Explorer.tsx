@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useTranslation } from "react-i18next";
-import { apkDecode, apkDecodedEntries, apkExport, apkBuildSign, apkImport, apkReopen, apkReport, apkRevertAll, apkPatchSummary } from "../../lib/apk";
+import { apkDecodeStart, apkDecodeStatus, apkDecodeCancel, apkDecodedEntries, apkExport, apkBuildSign, apkImport, apkReopen, apkReport, apkRevertAll, apkPatchSummary } from "../../lib/apk";
 import { pickApkPath } from "../../lib/pick";
 import { IpcError } from "../../lib/ipc";
 import { useUi } from "../../state/ui";
@@ -88,12 +88,24 @@ export function Explorer() {
     enabled: report.data != null,
     retry: false,
   });
-  const decodeMut = useMutation({
-    mutationFn: apkDecode,
-    onSuccess: (msg) => {
-      setMessage({ text: msg, ok: true });
-      void queryClient.invalidateQueries({ queryKey: ["apk"] });
+  const decodeStatus = useQuery({
+    queryKey: ["apk", "decode"],
+    queryFn: apkDecodeStatus,
+    enabled: report.data != null,
+    retry: false,
+    refetchInterval: (q) => (q.state.data?.running === true ? 1000 : false),
+  });
+  const decodeStartMut = useMutation({
+    mutationFn: apkDecodeStart,
+    onSuccess: (st) => {
+      queryClient.setQueryData(["apk", "decode"], st);
+      void queryClient.invalidateQueries({ queryKey: ["apk", "decoded"] });
     },
+    onError: (e) => setMessage({ text: describe(e), ok: false }),
+  });
+  const decodeCancelMut = useMutation({
+    mutationFn: apkDecodeCancel,
+    onSuccess: (st) => queryClient.setQueryData(["apk", "decode"], st),
     onError: (e) => setMessage({ text: describe(e), ok: false }),
   });
 
@@ -142,7 +154,7 @@ export function Explorer() {
     [patches.data],
   );
   const decodedTree = useMemo(
-    () => buildTree((decoded.data ?? []).map((e) => e.path.replace(/^decoded\//, ""))),
+    () => buildTree((decoded.data?.entries ?? []).map((e) => e.path.replace(/^decoded\//, ""))),
     [decoded.data],
   );
   const decodedPatched = useMemo(
@@ -154,7 +166,18 @@ export function Explorer() {
       ),
     [patchedSet],
   );
-  const decodedCount = decoded.data?.length ?? 0;
+  const decodedCount = decoded.data?.total ?? 0;
+  const decodedTruncated = decoded.data?.truncated === true;
+  const decodedReady = decoded.data?.ready === true;
+  const decodeRunning = decodeStatus.data?.running === true;
+  const decodeFailed = decodeStatus.data?.finished === true && decodeStatus.data.ok !== true;
+  const decodeCancelled = decodeStatus.data?.cancelled === true;
+
+  useEffect(() => {
+    if (decodeStatus.data?.finished === true && decodeStatus.data.ok === true) {
+      void queryClient.invalidateQueries({ queryKey: ["apk", "decoded"] });
+    }
+  }, [decodeStatus.data?.finished, decodeStatus.data?.ok, queryClient]);
 
   return (
     <div className="flex h-full flex-col overflow-y-auto bg-surface p-2 text-sm">
@@ -174,17 +197,18 @@ export function Explorer() {
             >
               ⌕
             </button>
-            <button
-              type="button"
-              data-testid="explorer-decode"
-              disabled={decodeMut.isPending}
-              onClick={() => decodeMut.mutate()}
-              aria-label={t("explorer.decode")}
-              title={t("explorer.decodeHint")}
-              className="rounded-sm px-1 text-[10px] font-medium text-text-dim hover:bg-surface-2 hover:text-text disabled:opacity-50"
-            >
-              {decodeMut.isPending ? "…" : t("explorer.decode")}
-            </button>
+            {!decodedReady && !decodeRunning && (
+              <button
+                type="button"
+                data-testid="explorer-decode"
+                onClick={() => decodeStartMut.mutate()}
+                aria-label={t("explorer.decode")}
+                title={t("explorer.decodeHint")}
+                className="rounded-sm px-1 text-[10px] font-medium text-text-dim hover:bg-surface-2 hover:text-text"
+              >
+                {t("explorer.decode")}
+              </button>
+            )}
             <button
               type="button"
               data-testid="explorer-collapse"
@@ -208,6 +232,49 @@ export function Explorer() {
           </>
         )}
       </div>
+      {decodeRunning && (
+        <div
+          data-testid="explorer-decode-status"
+          className="mb-1 rounded-md border border-accent/30 bg-accent/10 px-2 py-1.5"
+        >
+          <div className="flex items-center gap-2">
+            <span className="flex-1 text-[11px] text-accent">
+              {t("explorer.decoding", {
+                files: decodeStatus.data?.files ?? 0,
+                secs: decodeStatus.data?.elapsed_secs ?? 0,
+              })}
+            </span>
+            <button
+              type="button"
+              data-testid="explorer-decode-cancel"
+              disabled={decodeCancelMut.isPending}
+              onClick={() => decodeCancelMut.mutate()}
+              className="rounded border border-danger/40 px-1.5 py-0.5 text-[10px] text-danger hover:bg-danger/15 disabled:opacity-50"
+            >
+              {t("explorer.decodeCancel")}
+            </button>
+          </div>
+          <div className="mt-1 h-1 w-full overflow-hidden rounded bg-surface-2">
+            <div className="h-full w-1/3 animate-pulse rounded bg-accent/70" />
+          </div>
+        </div>
+      )}
+      {!decodeRunning && decodeFailed && decodeStatus.data?.error != null && (
+        <p
+          data-testid="explorer-decode-status"
+          className="mb-1 break-all px-1 text-xs text-danger"
+        >
+          {decodeStatus.data.error}
+        </p>
+      )}
+      {!decodeRunning && decodeCancelled && (
+        <p
+          data-testid="explorer-decode-status"
+          className="mb-1 px-1 text-xs text-warning"
+        >
+          {t("explorer.decodeCancelled")}
+        </p>
+      )}
       {report.isPending ? (
         <span className="px-1 text-text-dim">{t("common.loading")}</span>
       ) : report.isError || report.data == null ? (
@@ -233,7 +300,7 @@ export function Explorer() {
             patched={patchedSet}
             collapseToken={collapseToken}
           />
-          {decodedCount > 0 && (
+          {decodedReady && decodedCount > 0 && (
             <div className="mt-3 border-t border-border pt-1">
               <div className="flex items-center gap-2 px-1 text-[10px] font-semibold uppercase tracking-wide text-text-dim">
                 <span className="flex-1">{t("explorer.decodedSources")}</span>
@@ -249,6 +316,11 @@ export function Explorer() {
                 collapseToken={collapseToken}
                 startCollapsed
               />
+              {decodedTruncated && (
+                <p className="px-1 text-[10px] text-warning">
+                  {t("explorer.decodedTruncated", { shown: decoded.data?.entries.length ?? 0 })}
+                </p>
+              )}
             </div>
           )}
           {pendingCount > 0 && (

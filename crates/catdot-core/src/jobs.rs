@@ -157,7 +157,7 @@ pub async fn run_command_job(
 /// Kill a process by PID. On Windows this uses `taskkill /PID /T /F`
 /// (kills the whole tree — Job-Object semantics for Phase 0; a native
 /// Job-Object handle lands in Phase 4 hardening with its own ADR).
-fn kill_tree(pid: u32) {
+pub(crate) fn kill_tree(pid: u32) {
     #[cfg(windows)]
     {
         let _ = std::process::Command::new("taskkill.exe")

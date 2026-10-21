@@ -211,13 +211,13 @@
     },
     {
       "id": "apk-replace-all",
-      "title": "Bulk replace across readable APK entries (exact case) with reversible patches and bounded limits",
+      "title": "Bulk replace across readable APK entries and decoded sources (exact case) with reversible patches and bounded limits",
       "phase": 2,
       "status": "real",
       "evidence": [
-        "cargo test -p catdot-core workspace::tests::replace_in_entries_overlays_patches_and_is_exact (overlay, exact case, empty-target error)",
-        "apps/desktop features/search/SearchPanel.tsx: apk_replace_all IPC, success count/files, invalidates ['apk'] so Changes + tree update",
-        "CDP E2E: real replace applied, open_entry reflected it, revert_entry restored patch count 0"
+        "cargo test -p catdot-core workspace::tests::replace_in_entries_overlays_patches_and_is_exact + decoded::tests::replace_decoded_is_exact_and_patch_only",
+        "apps/desktop features/search/SearchPanel.tsx: apk_replace_all IPC (APK text + decoded sources), success count/files, invalidates ['apk']",
+        "CDP E2E: real replace applied to decoded XML+smali, open_entry reflected it, revert_all restored patch count 0"
       ]
     },
     {
@@ -229,7 +229,33 @@
         "cargo test -p catdot-core decoded:: (list skips build/binary, sandboxed paths, case-aware search, honest scanned count)",
         "apps/desktop features/apk-explorer/Explorer.tsx: Decode action + Decoded sources tree; opening decoded/<rel> reads the working copy; saves become decoded/<rel> patches",
         "CDP E2E with a seeded decoded tree: entries listed, open true, save patch visible, revert restores, search found both XML+smali (scanned 3), traversal INVALID_INPUT, tree+search UI, zero console errors",
-        "Honest limit: full apktool decode timing not re-run in this E2E; binary files are not listed as editable"
+        "CDP E2E real XAPK base decode: 339 s, 67,762 files, 65,249 editable sources listed in 703 ms (truncated:false), smali open from search works; search stops at 64 MiB and shows a partial-results warning",
+        "CDP E2E real decoded smali edit -> apk_build_sign: 423 s, signature_verified + aligned_verified true; the build decoded into build-tmp, so reverting the patch left the 65,249-source working copy clean (hasMark:false)",
+        "CDP E2E decoded tree mounts fully collapsed: 14 rows for 65,249 sources (deep smali not rendered), zero console errors",
+        "Honest limits: binary files are not listed as editable; decoded search stops at the 64 MiB scan budget"
+      ]
+    },
+    {
+      "id": "xapk-base-apk",
+      "title": "XAPK bundles resolve their largest root-level base APK (cached, original untouched) for decode/export/build",
+      "phase": 3,
+      "status": "real",
+      "evidence": [
+        "cargo test -p catdot-core bundle:: (plain APK passthrough, largest root APK extracted+cached, nested APKs ignored, no-base honest error)",
+        "apk_decode/apk_export/apk_build_sign/rebuild_patched_project use resolve_source_apk; decode message names the XAPK base entry",
+        "CDP E2E on the user's real 163 MB XAPK: export + build/sign use the extracted 158 MB base APK; signed.apk is 159,151,889 B with apksigner verify + zipalign -c both true"
+      ]
+    },
+    {
+      "id": "decode-progress-cancel",
+      "title": "Background apktool decode with live progress (files/elapsed), process-tree cancellation, and partial-decode guard",
+      "phase": 3,
+      "status": "real",
+      "evidence": [
+        "catdot-core tools::decode_cancellable: 250 ms supervision loop, sampled file count every 2 s, 600 s cap, cancel kills the child tree and returns TOOL_CANCELLED",
+        "decoded::DecodedSources.ready is false without AndroidManifest.xml (test: partial decode with files but no manifest is not usable)",
+        "CDP E2E on the real 158 MB base: start -> running with 32 files at 6 s, cancel -> cancelled=true/files=32, UI shows 'Decode cancelled'; partial tree (700 entries, ready:false) shows the Decode retry button; zero console errors",
+        "Honest limit: progress is sampled files + elapsed time, not a fake percentage"
       ]
     },
     {

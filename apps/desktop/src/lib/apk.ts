@@ -2,7 +2,8 @@
 // export → sign, checkpoints (F4) and device steps (F7).
 import type {
   ApkReport,
-  ApkEntry,
+  DecodedSources,
+  DecodeStatus,
   ApkReplaceResult,
   ApkSearchResult,
   ApkStatus,
@@ -27,6 +28,11 @@ export const apkManifest = () => call<ManifestInfo>("apk_manifest");
 // Structured edit ops (Guided recipes / decode pipeline).
 export const apkDecode = () => call<string>("apk_decode");
 
+/** Background decode with real progress polling + cancellation. */
+export const apkDecodeStart = () => call<DecodeStatus>("apk_decode_start");
+export const apkDecodeStatus = () => call<DecodeStatus>("apk_decode_status");
+export const apkDecodeCancel = () => call<DecodeStatus>("apk_decode_cancel");
+
 export const apkSetLabel = (label: string) =>
   call<PatchSummary>("apk_set_label", { label });
 
@@ -39,7 +45,7 @@ export const apkSetVersion = (code: number, name?: string | null) =>
 export const apkReport = () => call<ApkReport>("apk_report");
 
 /** Editable text sources of the decoded apktool project (empty before decode). */
-export const apkDecodedEntries = () => call<ApkEntry[]>("apk_decoded_entries");
+export const apkDecodedEntries = () => call<DecodedSources>("apk_decoded_entries");
 
 export const apkOpenEntry = (entryPath: string) =>
   call<OpenedFile>("apk_open_entry", { entryPath });

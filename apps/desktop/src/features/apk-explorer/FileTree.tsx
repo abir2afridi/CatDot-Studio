@@ -1,5 +1,5 @@
 // VS Code-style APK file tree: collapsible dirs, patched markers, active file.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { collectDirPaths } from "../../lib/tree";
 import { useUi } from "../../state/ui";
 import { entryIcon, type TreeNode } from "./tree-model";
@@ -27,12 +27,19 @@ export function FileTree({
     startCollapsed ? collectDirPaths(root) : new Set(),
   );
   const [rootOpen, setRootOpen] = useState(true);
+  const prevRootName = useRef(rootName);
+  const hadEntries = useRef(root.children.length > 0);
 
-  // When a new APK is imported, re-align defaults: only root stays open.
   useEffect(() => {
-    setCollapsed(new Set());
-    setRootOpen(true);
-  }, [rootName]);
+    const rootChanged = prevRootName.current !== rootName;
+    const firstEntries = !hadEntries.current && root.children.length > 0;
+    if (rootChanged || firstEntries) {
+      setCollapsed(startCollapsed ? collectDirPaths(root) : new Set());
+      setRootOpen(true);
+      prevRootName.current = rootName;
+    }
+    hadEntries.current = root.children.length > 0;
+  }, [root, rootName, startCollapsed]);
 
   // "Collapse all" collects every directory path and folds it.
   useEffect(() => {

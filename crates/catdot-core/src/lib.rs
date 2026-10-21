@@ -4,6 +4,7 @@
 pub mod ai;
 pub mod apk_types;
 pub mod branding;
+pub mod bundle;
 pub mod decoded;
 pub mod diagnostics;
 pub mod errors;

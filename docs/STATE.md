@@ -190,3 +190,55 @@
   CE981CE3…4F2345; NSIS 4.06 MiB sha256 1AC937D7…B3C582. Evidence:
   `docs/EVIDENCE/phase-3-decoded-editing.md`. Honest limits: full apktool
   decode of the 163 MB XAPK not re-timed; export-rebuild path not E2E'd.
+
+- **2026-10-21 — Replace All now covers decoded sources**: `apk_replace_all`
+  applies the same exact-case bulk replace to APK text entries AND apktool
+  decoded files; changes remain reversible `decoded/<rel>` patches (≤100
+  files/container, 64 MiB scan budget). SearchPanel hint updated. Added
+  `decoded::replace` unit test; E2E replaced a token in synthetic decoded
+  XML+smali (2/2), verified patched opens, patch paths, revert-all to 0 and
+  content restored; UI status "2 replacements in 2 files"; zero console
+  errors; workspace cleaned to patches []. Gates: 4 decoded tests, clippy,
+  audit 47 PASSED. Installers: MSI 5.27 MiB sha256 97AC44D8…49DC4E2; NSIS
+  4.06 MiB sha256 1C51361C…C7E7626. Evidence updated:
+  `docs/EVIDENCE/phase-3-decoded-editing.md`.
+
+- **2026-10-21 — XAPK base build + real decode (48 features)**: XAPK bundles
+  now resolve the largest root APK (cached, original untouched) for
+  decode/export/build; on the user's 163 MB XAPK this fixed the 0-byte signed
+  output — signed.apk is 159,151,889 B with zipalign -c and apksigner verify
+  true. Real apktool decode took 339 s → 67,762 files; 65,249 editable sources
+  listed in 703 ms (`truncated:false`, cap raised to 100k with honest totals);
+  decoded smali opens from search. Search on the full tree stops at the 64 MiB
+  scan budget and the UI now honestly says "Results are partial" (copy fixed
+  from the misleading 200-hit message). Tests: 3 bundle + 4 decoded core tests;
+  E2E zero console errors; workspace patches []. Gates: clippy, audit 48
+  PASSED. Installers: MSI 5.28 MiB sha256 0ECED394…A45930; NSIS 4.07 MiB
+  sha256 AE0AFC3E…D4ADA1. Evidence: `docs/EVIDENCE/phase-3-decoded-editing.md`.
+  Next honest gap: decode has no progress/cancel UI (blocks for minutes).
+
+- **2026-10-21 — Background decode with progress/cancel (49 features)**:
+  `apk_decode_start`/`status`/`cancel` run apktool in a supervised worker
+  (sampled decoded-file count every 2 s, elapsed time, 600 s cap, real process
+  tree kill). Explorer shows live "Decoding… N files · Xs" with Cancel and an
+  indeterminate bar, and keeps a Decode retry button when a cancelled decode
+  left files but no `AndroidManifest.xml` (`DecodedSources.ready=false`).
+  E2E on the real 158 MB base: 32 files at 6 s, cancel -> cancelled, UI status,
+  partial tree 700 entries ready:false with retry button, zero console errors;
+  workspace restored to 65,249 sources, patches []. Tests: 5 decoded core tests
+  (incl. partial-ready guard), 28 vitest, clippy, audit 49 PASSED. Installers:
+  MSI 5.29 MiB sha256 05EBD968…F98DE8; NSIS 4.08 MiB sha256 5FCE88EB…71792B.
+  Evidence: `docs/EVIDENCE/phase-3-decoded-editing.md`.
+
+- **2026-10-21 — Real decoded rebuild + build isolation (49 features)**:
+  `rebuild_patched_project` decodes into `workspace/build-tmp` instead of
+  replacing the user's `decoded/` tree. E2E on the real 158 MB XAPK base edited
+  `decoded/smali/ads_mobile_sdk/cz1.smali`, rebuilt/signed in 423 s with
+  `signature_verified:true` + `aligned_verified:true` (`signed.apk` 162,014,188
+  B); after revert the working copy was clean (`hasMark:false`) and patches `[]`.
+  The decoded tree also now honors `startCollapsed`: 14 rendered rows for 65,249
+  sources instead of expanding a 65k-row DOM. Auto before-build checkpoint
+  created; `build-tmp` removed. Gates: 126 core tests, 28 vitest, clippy, audit
+  49 PASSED. Installers: MSI 5.29 MiB sha256 614EABC9…1365781; NSIS 4.08 MiB
+  sha256 4DAC24A9…314850B4. Evidence: `docs/EVIDENCE/phase-3-decoded-editing.md`.
+  Honest gap: a decoded rebuild takes ~7 minutes with no progress UI.

@@ -5,12 +5,31 @@
 
 use std::path::{Path, PathBuf};
 
-use crate::errors::{AppError, ErrorCode};
-use crate::workspace::{ApkEntry, ApkSearchHit, ApkSearchResult, MAX_SEARCH_HITS, MAX_TEXT_BYTES};
+use serde::Serialize;
+use ts_rs::TS;
 
-const MAX_DECODED_ENTRIES: usize = 20_000;
+use crate::errors::{AppError, ErrorCode};
+use crate::workspace::{
+    ApkEntry, ApkReplaceOutcome, ApkReplaceResult, ApkSearchHit, ApkSearchResult, Patch,
+    MAX_REPLACE_ENTRIES, MAX_SEARCH_HITS, MAX_TEXT_BYTES,
+};
+
+const MAX_DECODED_ENTRIES: usize = 100_000;
 /// Bound synchronous scan work so a huge smali tree cannot hang the UI thread.
 const MAX_DECODED_SCAN_BYTES: usize = 64 * 1024 * 1024;
+
+/// Editable decoded sources plus honest totals (`truncated` = tree exceeds the
+/// listing cap, so the UI can say so instead of silently hiding files).
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export)]
+pub struct DecodedSources {
+    pub entries: Vec<ApkEntry>,
+    pub total: u32,
+    pub truncated: bool,
+    /// true only when the decoded project has its manifest (a cancelled/failed
+    /// decode can leave partial files that must not be presented as usable).
+    pub ready: bool,
+}
 const TEXT_EXTENSIONS: &[&str] = &[
     "xml", "smali", "txt", "json", "md", "html", "js", "csv", "java", "kt", "properties", "pro",
     "cfg", "yml", "yaml", "gradle", "css",
@@ -69,20 +88,33 @@ pub fn file_of(decoded_dir: &Path, entry_path: &str) -> Result<PathBuf, AppError
 }
 
 /// List editable text sources as `decoded/<rel>` entries (bounded, sorted).
-pub fn list_entries(decoded_dir: &Path) -> Result<Vec<ApkEntry>, AppError> {
+pub fn list_entries(decoded_dir: &Path) -> Result<DecodedSources, AppError> {
     if !decoded_dir.is_dir() {
-        return Ok(Vec::new());
+        return Ok(DecodedSources {
+            entries: Vec::new(),
+            total: 0,
+            truncated: false,
+            ready: false,
+        });
     }
     let mut out = Vec::new();
-    walk(decoded_dir, decoded_dir, &mut out)?;
+    let mut total = 0usize;
+    walk(decoded_dir, decoded_dir, &mut out, &mut total)?;
     out.sort_by(|a, b| a.path.cmp(&b.path));
-    Ok(out)
+    Ok(DecodedSources {
+        entries: out,
+        total: total.min(u32::MAX as usize) as u32,
+        truncated: total > MAX_DECODED_ENTRIES,
+        ready: decoded_dir.join("AndroidManifest.xml").is_file(),
+    })
 }
 
-fn walk(root: &Path, dir: &Path, out: &mut Vec<ApkEntry>) -> Result<(), AppError> {
-    if out.len() >= MAX_DECODED_ENTRIES {
-        return Ok(());
-    }
+fn walk(
+    root: &Path,
+    dir: &Path,
+    out: &mut Vec<ApkEntry>,
+    total: &mut usize,
+) -> Result<(), AppError> {
     for entry in std::fs::read_dir(dir)? {
         let entry = entry?;
         let ft = entry.file_type()?;
@@ -94,10 +126,14 @@ fn walk(root: &Path, dir: &Path, out: &mut Vec<ApkEntry>) -> Result<(), AppError
             if SKIP_DIRS.contains(&name.as_str()) {
                 continue;
             }
-            walk(root, &entry.path(), out)?;
+            walk(root, &entry.path(), out, total)?;
             continue;
         }
         if !ft.is_file() || !text_ext(&name) {
+            continue;
+        }
+        *total += 1;
+        if out.len() >= MAX_DECODED_ENTRIES {
             continue;
         }
         let rel = entry
@@ -113,9 +149,6 @@ fn walk(root: &Path, dir: &Path, out: &mut Vec<ApkEntry>) -> Result<(), AppError
             compressed_size: size,
             is_text: true,
         });
-        if out.len() >= MAX_DECODED_ENTRIES {
-            return Ok(());
-        }
     }
     Ok(())
 }
@@ -138,6 +171,68 @@ pub fn read_entry(decoded_dir: &Path, entry_path: &str) -> Result<String, AppErr
     })
 }
 
+/// Bulk exact-case replace over decoded text sources. Files are not written;
+/// the returned patches are merged into the session and applied on rebuild.
+pub fn replace(
+    decoded_dir: &Path,
+    needle: &str,
+    replacement: &str,
+) -> Result<ApkReplaceOutcome, AppError> {
+    if needle.is_empty() {
+        return Err(invalid(
+            "replace target is empty",
+            "What happened: there is nothing to replace. What to do: enter the text to find.",
+        ));
+    }
+    if needle.len() > 512 || replacement.len() > 4096 {
+        return Err(invalid(
+            "search/replace text is too long",
+            "What happened: the search text must be ≤512 bytes and the replacement ≤4096 bytes. What to do: shorten them.",
+        ));
+    }
+    let entries = list_entries(decoded_dir)?.entries;
+    let mut updates = Vec::new();
+    let mut changed_entries = Vec::new();
+    let mut replacements = 0usize;
+    let mut truncated = false;
+    let mut scanned_bytes = 0usize;
+    let total_entries = entries.len();
+
+    for (idx, entry) in entries.into_iter().enumerate() {
+        if scanned_bytes > MAX_DECODED_SCAN_BYTES {
+            truncated = true;
+            break;
+        }
+        let Ok(content) = read_entry(decoded_dir, &entry.path) else {
+            continue;
+        };
+        scanned_bytes += content.len();
+        let count = content.matches(needle).count();
+        if count == 0 {
+            continue;
+        }
+        replacements += count;
+        changed_entries.push(entry.path.clone());
+        updates.push(Patch {
+            entry_path: entry.path,
+            content: content.replace(needle, replacement),
+        });
+        if changed_entries.len() >= MAX_REPLACE_ENTRIES {
+            truncated = idx + 1 < total_entries;
+            break;
+        }
+    }
+
+    Ok(ApkReplaceOutcome {
+        result: ApkReplaceResult {
+            changed_entries,
+            replacements,
+            truncated,
+        },
+        updates,
+    })
+}
+
 /// Search decoded text sources (case toggle, 200-hit cap, honest count).
 pub fn search(
     decoded_dir: &Path,
@@ -152,7 +247,7 @@ pub fn search(
         ));
     }
     let needle_lower = needle.to_lowercase();
-    let entries = list_entries(decoded_dir)?;
+    let entries = list_entries(decoded_dir)?.entries;
     let mut hits = Vec::new();
     let mut scanned_entries = 0usize;
     let mut scanned_bytes = 0usize;
@@ -244,7 +339,11 @@ mod tests {
     #[test]
     fn list_entries_skips_build_and_binary() {
         let dir = tmp_dir("list");
-        let entries = list_entries(&dir).expect("list");
+        let listing = list_entries(&dir).expect("list");
+        let entries = listing.entries;
+        assert_eq!(listing.total, 3);
+        assert!(!listing.truncated);
+        assert!(listing.ready);
         let paths: Vec<&str> = entries.iter().map(|e| e.path.as_str()).collect();
         assert_eq!(
             paths,
@@ -255,7 +354,13 @@ mod tests {
             ]
         );
         assert!(entries.iter().all(|e| e.is_text));
-        assert!(list_entries(&dir.join("missing")).unwrap().is_empty());
+        assert!(list_entries(&dir.join("missing")).unwrap().entries.is_empty());
+        // A cancelled decode can leave files without the manifest: not usable.
+        std::fs::create_dir_all(dir.join("partial/smali")).unwrap();
+        std::fs::write(dir.join("partial/smali/A.smali"), ".class public LA;").unwrap();
+        let partial = list_entries(&dir.join("partial")).unwrap();
+        assert_eq!(partial.total, 1);
+        assert!(!partial.ready);
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -268,6 +373,27 @@ mod tests {
         assert!(read_entry(&dir, "decoded/build/generated/junk.xml").is_err());
         assert!(read_entry(&dir, "decoded/res/nope.xml").is_err());
         assert!(read_entry(&dir, "AndroidManifest.xml").is_err());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn replace_decoded_is_exact_and_patch_only() {
+        let dir = tmp_dir("replace");
+        let out = replace(&dir, "Hello", "Hi").expect("replace");
+        assert_eq!(out.result.replacements, 1);
+        assert_eq!(out.result.changed_entries, vec!["decoded/res/values/strings.xml"]);
+        assert!(!out.result.truncated);
+        assert_eq!(out.updates.len(), 1);
+        assert!(out.updates[0].content.contains("Hi world"));
+        // Working copy is untouched; only patches change.
+        assert!(read_entry(&dir, "decoded/res/values/strings.xml")
+            .unwrap()
+            .contains("Hello world"));
+
+        let miss = replace(&dir, "HeLLo", "hi").expect("case");
+        assert_eq!(miss.result.replacements, 0);
+        assert!(miss.updates.is_empty());
+        assert!(replace(&dir, "", "x").is_err());
         let _ = std::fs::remove_dir_all(&dir);
     }
 
