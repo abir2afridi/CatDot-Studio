@@ -3,6 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ActivityBar } from "./components/ActivityBar";
 import { EditorArea } from "./features/editor/EditorArea";
 import { Explorer } from "./features/apk-explorer/Explorer";
+import { SearchPanel } from "./features/search/SearchPanel";
 import { BottomPanel } from "./features/panel/BottomPanel";
 import { MenuBar } from "./components/MenuBar";
 import { BottomResizeHandle, SecondaryResizeHandle, SidebarResizeHandle, useLayoutPersistence } from "./components/ResizeHandles";
@@ -44,6 +45,7 @@ export default function App() {
   const setLocale = useUi((s) => s.setLocale);
   const setNotice = useUi((s) => s.setNotice);
   const explorerOpen = useUi((s) => s.explorerOpen);
+  const sidebarView = useUi((s) => s.sidebarView);
   const secondaryOpen = useUi((s) => s.secondaryOpen);
   const explorerWidth = useUi((s) => s.explorerWidth);
   const bottomOpen = useUi((s) => s.bottomOpen);
@@ -116,7 +118,7 @@ export default function App() {
               style={{ width: explorerWidth }}
               data-testid="sidebar"
             >
-              <Explorer />
+              {sidebarView === "search" ? <SearchPanel /> : <Explorer />}
             </aside>
             <SidebarResizeHandle />
           </>

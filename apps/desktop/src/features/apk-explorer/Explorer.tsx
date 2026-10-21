@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useTranslation } from "react-i18next";
-import { apkExport, apkBuildSign, apkImport, apkReopen, apkReport, apkRevertAll, apkPatchSummary } from "../../lib/apk";
+import { apkDecode, apkDecodedEntries, apkExport, apkBuildSign, apkImport, apkReopen, apkReport, apkRevertAll, apkPatchSummary } from "../../lib/apk";
 import { pickApkPath } from "../../lib/pick";
 import { IpcError } from "../../lib/ipc";
 import { useUi } from "../../state/ui";
@@ -14,6 +14,7 @@ export function Explorer() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const openFile = useUi((s) => s.openFile);
+  const openSearch = useUi((s) => s.openSearch);
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const [collapseToken, setCollapseToken] = useState(0);
   const importMutRef = useRef<typeof importMut | null>(null);
@@ -81,6 +82,21 @@ export function Explorer() {
   const pendingCount = patches.data?.count ?? 0;
   const showRevertAll = shouldShowRevertAll && pendingCount > 0;
 
+  const decoded = useQuery({
+    queryKey: ["apk", "decoded"],
+    queryFn: apkDecodedEntries,
+    enabled: report.data != null,
+    retry: false,
+  });
+  const decodeMut = useMutation({
+    mutationFn: apkDecode,
+    onSuccess: (msg) => {
+      setMessage({ text: msg, ok: true });
+      void queryClient.invalidateQueries({ queryKey: ["apk"] });
+    },
+    onError: (e) => setMessage({ text: describe(e), ok: false }),
+  });
+
   const buildMut = useMutation({
     mutationFn: () => apkBuildSign(),
     onSuccess: (res) => {
@@ -125,6 +141,20 @@ export function Explorer() {
     () => new Set(patches.data?.entries ?? []),
     [patches.data],
   );
+  const decodedTree = useMemo(
+    () => buildTree((decoded.data ?? []).map((e) => e.path.replace(/^decoded\//, ""))),
+    [decoded.data],
+  );
+  const decodedPatched = useMemo(
+    () =>
+      new Set(
+        [...patchedSet]
+          .filter((p) => p.startsWith("decoded/"))
+          .map((p) => p.slice("decoded/".length)),
+      ),
+    [patchedSet],
+  );
+  const decodedCount = decoded.data?.length ?? 0;
 
   return (
     <div className="flex h-full flex-col overflow-y-auto bg-surface p-2 text-sm">
@@ -134,6 +164,27 @@ export function Explorer() {
         </span>
         {report.data != null && (
           <>
+            <button
+              type="button"
+              data-testid="explorer-search"
+              onClick={openSearch}
+              aria-label={t("search.title")}
+              title={t("search.title")}
+              className="flex h-5 w-5 items-center justify-center rounded-sm text-text-dim hover:bg-surface-2 hover:text-text"
+            >
+              ⌕
+            </button>
+            <button
+              type="button"
+              data-testid="explorer-decode"
+              disabled={decodeMut.isPending}
+              onClick={() => decodeMut.mutate()}
+              aria-label={t("explorer.decode")}
+              title={t("explorer.decodeHint")}
+              className="rounded-sm px-1 text-[10px] font-medium text-text-dim hover:bg-surface-2 hover:text-text disabled:opacity-50"
+            >
+              {decodeMut.isPending ? "…" : t("explorer.decode")}
+            </button>
             <button
               type="button"
               data-testid="explorer-collapse"
@@ -182,6 +233,24 @@ export function Explorer() {
             patched={patchedSet}
             collapseToken={collapseToken}
           />
+          {decodedCount > 0 && (
+            <div className="mt-3 border-t border-border pt-1">
+              <div className="flex items-center gap-2 px-1 text-[10px] font-semibold uppercase tracking-wide text-text-dim">
+                <span className="flex-1">{t("explorer.decodedSources")}</span>
+                <span className="font-normal normal-case text-text-dim/70">
+                  {t("explorer.decodedCount", { count: decodedCount })}
+                </span>
+              </div>
+              <FileTree
+                root={decodedTree}
+                rootName="decoded"
+                onOpen={(rel) => openFile(`decoded/${rel}`)}
+                patched={decodedPatched}
+                collapseToken={collapseToken}
+                startCollapsed
+              />
+            </div>
+          )}
           {pendingCount > 0 && (
             <p className="mt-2 px-1 text-[11px] text-accent" aria-live="polite">
               {t("status.pendingEdits", { count: pendingCount })}

@@ -49,6 +49,44 @@ pub struct Patch {
     pub content: String,
 }
 
+pub const MAX_SEARCH_HITS: usize = 200;
+const MAX_SEARCH_ENTRY_BYTES: u64 = 1_500_000;
+
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export)]
+pub struct ApkSearchHit {
+    pub entry_path: String,
+    pub line: u32,
+    pub column: u32,
+    pub snippet: String,
+    pub patched: bool,
+}
+
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export)]
+pub struct ApkSearchResult {
+    pub hits: Vec<ApkSearchHit>,
+    pub truncated: bool,
+    pub scanned_entries: usize,
+}
+
+pub const MAX_REPLACE_ENTRIES: usize = 100;
+
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export)]
+pub struct ApkReplaceResult {
+    pub changed_entries: Vec<String>,
+    pub replacements: usize,
+    pub truncated: bool,
+}
+
+/// Non-serialized companion: the new patch contents produced by a replace.
+#[derive(Debug)]
+pub struct ApkReplaceOutcome {
+    pub result: ApkReplaceResult,
+    pub updates: Vec<Patch>,
+}
+
 fn read_err(msg: impl Into<String>) -> AppError {
     AppError::new(
         ErrorCode::ImportUnsupportedType,
@@ -191,6 +229,187 @@ pub fn read_entry(apk_path: &Path, entry_path: &str) -> Result<String, AppError>
     e.read_to_string(&mut buf)
         .map_err(|_| read_err("entry is not UTF-8 text"))?;
     Ok(buf)
+}
+
+/// Search all text entries (original APK + pending patches win) for `query`.
+/// Binary and oversized entries are skipped silently; `scanned_entries` says
+/// how many readable entries were actually searched (honest limits).
+pub fn search_entries(
+    apk_path: &Path,
+    patches: &[Patch],
+    query: &str,
+    case_sensitive: bool,
+) -> Result<ApkSearchResult, AppError> {
+    let needle = query.trim();
+    if needle.is_empty() {
+        return Err(AppError::new(
+            ErrorCode::InvalidInput,
+            "search query is empty",
+            "What happened: the search box is empty. What to do: type at least one character.",
+        ));
+    }
+    let needle_lower = needle.to_lowercase();
+    let patched: HashMap<&str, &str> = patches
+        .iter()
+        .map(|p| (p.entry_path.as_str(), p.content.as_str()))
+        .collect();
+
+    let f = std::fs::File::open(apk_path).map_err(|e| read_err(format!("cannot open APK: {e}")))?;
+    let mut ar = ZipArchive::new(f).map_err(|e| read_err(format!("bad APK: {e}")))?;
+
+    let mut hits = Vec::new();
+    let mut scanned_entries = 0usize;
+    let mut truncated = false;
+
+    for i in 0..ar.len() {
+        let mut entry = ar
+            .by_index(i)
+            .map_err(|e| read_err(format!("bad APK entry #{i}: {e}")))?;
+        if entry.is_dir() {
+            continue;
+        }
+        let path = entry.name().to_string();
+        let content = if let Some(text) = patched.get(path.as_str()) {
+            scanned_entries += 1;
+            (*text).to_string()
+        } else {
+            if entry.size() > MAX_SEARCH_ENTRY_BYTES {
+                continue;
+            }
+            let mut text = String::with_capacity(entry.size() as usize);
+            if entry.read_to_string(&mut text).is_err() {
+                continue; // binary / non-UTF-8: not searchable as text
+            }
+            scanned_entries += 1;
+            text
+        };
+        let is_patched = patched.contains_key(path.as_str());
+
+        for (idx, line) in content.lines().enumerate() {
+            let (found, col) = if case_sensitive {
+                match line.find(needle) {
+                    Some(at) => (true, line[..at].chars().count() + 1),
+                    None => (false, 0),
+                }
+            } else {
+                let lower = line.to_lowercase();
+                match lower.find(&needle_lower) {
+                    Some(at) => (true, lower[..at].chars().count() + 1),
+                    None => (false, 0),
+                }
+            };
+            if !found {
+                continue;
+            }
+            hits.push(ApkSearchHit {
+                entry_path: path.clone(),
+                line: (idx + 1) as u32,
+                column: col as u32,
+                snippet: line.trim().chars().take(200).collect(),
+                patched: is_patched,
+            });
+            if hits.len() >= MAX_SEARCH_HITS {
+                truncated = true;
+                break;
+            }
+        }
+        if truncated {
+            break;
+        }
+    }
+
+    Ok(ApkSearchResult {
+        hits,
+        truncated,
+        scanned_entries,
+    })
+}
+
+/// Replace an exact, case-sensitive needle in every readable text entry
+/// (pending patches win as the base). Every change becomes a reversible patch;
+/// limits keep a single bulk edit bounded and honest (`truncated`).
+pub fn replace_in_entries(
+    apk_path: &Path,
+    patches: &[Patch],
+    needle: &str,
+    replacement: &str,
+) -> Result<ApkReplaceOutcome, AppError> {
+    if needle.is_empty() {
+        return Err(AppError::new(
+            ErrorCode::InvalidInput,
+            "replace target is empty",
+            "What happened: there is nothing to replace. What to do: enter the text to find.",
+        ));
+    }
+    if needle.len() > 512 || replacement.len() > 4096 {
+        return Err(AppError::new(
+            ErrorCode::InvalidInput,
+            "search/replace text is too long",
+            "What happened: the search text must be ≤512 bytes and the replacement ≤4096 bytes. What to do: shorten them.",
+        ));
+    }
+    let patched: HashMap<&str, &str> = patches
+        .iter()
+        .map(|p| (p.entry_path.as_str(), p.content.as_str()))
+        .collect();
+
+    let f = std::fs::File::open(apk_path).map_err(|e| read_err(format!("cannot open APK: {e}")))?;
+    let mut ar = ZipArchive::new(f).map_err(|e| read_err(format!("bad APK: {e}")))?;
+
+    let mut updates = Vec::new();
+    let mut changed_entries = Vec::new();
+    let mut replacements = 0usize;
+    let mut truncated = false;
+    let total_entries = ar.len();
+
+    for i in 0..total_entries {
+        let mut entry = ar
+            .by_index(i)
+            .map_err(|e| read_err(format!("bad APK entry #{i}: {e}")))?;
+        if entry.is_dir() {
+            continue;
+        }
+        let path = entry.name().to_string();
+        if updates.iter().any(|u: &Patch| u.entry_path == path) {
+            continue;
+        }
+        let content = if let Some(text) = patched.get(path.as_str()) {
+            (*text).to_string()
+        } else {
+            if entry.size() > MAX_SEARCH_ENTRY_BYTES {
+                continue;
+            }
+            let mut text = String::with_capacity(entry.size() as usize);
+            if entry.read_to_string(&mut text).is_err() {
+                continue;
+            }
+            text
+        };
+        let count = content.matches(needle).count();
+        if count == 0 {
+            continue;
+        }
+        let next = content.replace(needle, replacement);
+        replacements += count;
+        changed_entries.push(path.clone());
+        updates.push(Patch {
+            entry_path: path,
+            content: next,
+        });
+        if changed_entries.len() >= MAX_REPLACE_ENTRIES {
+            truncated = i + 1 < total_entries;
+            break;
+        }
+    }
+
+    Ok(ApkReplaceOutcome {
+        result: ApkReplaceResult {
+            changed_entries,
+            replacements,
+            truncated,
+        },
+        updates,
+    })
 }
 
 /// Export a NEW APK at `out_path` with `patches` applied. Every patch target
@@ -398,6 +617,100 @@ mod tests {
         let p = dir.join("original.apk");
         assert_eq!(super::read_entry(&p, "assets/a.xml").unwrap(), "hello");
         assert!(super::read_entry(&p, "no/pe").is_err());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn search_entries_case_patch_overlay_and_limits() {
+        use super::Patch;
+        let apk = make_test_zip(&[
+            (
+                "AndroidManifest.xml",
+                "<manifest>\n  <application android:label=\"Old Name\"/>\n</manifest>",
+            ),
+            (
+                "res/values/strings.xml",
+                "<string name=\"app_name\">Old Name</string>",
+            ),
+        ]);
+        let dir = tmp_dir("search");
+        super::import_apk(&apk, &dir).expect("import");
+        let p = dir.join("original.apk");
+
+        let insensitive = super::search_entries(&p, &[], "old name", false).expect("search");
+        assert_eq!(insensitive.hits.len(), 2);
+        assert_eq!(insensitive.scanned_entries, 2);
+        assert_eq!(insensitive.hits[0].entry_path, "AndroidManifest.xml");
+        assert_eq!(insensitive.hits[0].line, 2);
+        assert!(insensitive.hits[0].snippet.contains("application"));
+        assert!(!insensitive.hits[0].patched);
+
+        let sensitive = super::search_entries(&p, &[], "old name", true).expect("search");
+        assert_eq!(sensitive.hits.len(), 0);
+
+        let patches = [Patch {
+            entry_path: "AndroidManifest.xml".into(),
+            content: "<manifest>\n  <application android:label=\"New Name\"/>\n</manifest>".into(),
+        }];
+        let patched = super::search_entries(&p, &patches, "New Name", true).expect("search");
+        assert_eq!(patched.hits.len(), 1);
+        assert!(patched.hits[0].patched);
+        let stale = super::search_entries(&p, &patches, "Old Name", true).expect("search");
+        assert_eq!(stale.hits.len(), 1);
+        assert_eq!(stale.hits[0].entry_path, "res/values/strings.xml");
+
+        let empty = super::search_entries(&p, &[], "   ", false).expect_err("empty query");
+        assert_eq!(empty.code, ErrorCode::InvalidInput);
+
+        let big = (0..250).map(|_| "needle").collect::<Vec<_>>().join("\n");
+        let many = make_test_zip(&[("assets/many.txt", big.as_str())]);
+        let capped = super::search_entries(&many, &[], "needle", true).expect("search");
+        assert_eq!(capped.hits.len(), super::MAX_SEARCH_HITS);
+        assert!(capped.truncated);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn replace_in_entries_overlays_patches_and_is_exact() {
+        use super::Patch;
+        let apk = make_test_zip(&[
+            ("assets/a.xml", "Old Old"),
+            ("assets/b.txt", "Old text"),
+            ("assets/c.txt", "nothing here"),
+        ]);
+        let dir = tmp_dir("replace");
+        super::import_apk(&apk, &dir).expect("import");
+        let p = dir.join("original.apk");
+
+        let patches = [Patch {
+            entry_path: "assets/a.xml".into(),
+            content: "Old newer".into(),
+        }];
+        let out = super::replace_in_entries(&p, &patches, "Old", "New").expect("replace");
+        assert_eq!(out.result.replacements, 2);
+        assert_eq!(out.result.changed_entries.len(), 2);
+        assert!(!out.result.truncated);
+        let a = out
+            .updates
+            .iter()
+            .find(|u| u.entry_path == "assets/a.xml")
+            .expect("a updated");
+        assert_eq!(a.content, "New newer");
+        let b = out
+            .updates
+            .iter()
+            .find(|u| u.entry_path == "assets/b.txt")
+            .expect("b updated");
+        assert_eq!(b.content, "New text");
+
+        let miss = super::replace_in_entries(&p, &[], "old", "new").expect("exact case");
+        assert_eq!(miss.result.replacements, 0);
+        assert!(miss.updates.is_empty());
+
+        let empty = super::replace_in_entries(&p, &[], "", "x").expect_err("empty");
+        assert_eq!(empty.code, ErrorCode::InvalidInput);
+
         let _ = std::fs::remove_dir_all(&dir);
     }
 

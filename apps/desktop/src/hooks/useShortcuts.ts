@@ -20,6 +20,13 @@ export function useShortcuts(): void {
         return;
       }
 
+      // Ctrl+Shift+F — search inside APK text.
+      if (e.ctrlKey && e.shiftKey && !e.altKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        ui.openSearch();
+        return;
+      }
+
       // Alt+Left / Alt+Right — file-history navigation (VS Code Go back/forward).
       if (
         !e.ctrlKey &&

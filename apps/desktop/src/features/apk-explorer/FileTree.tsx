@@ -12,16 +12,20 @@ export function FileTree({
   onOpen,
   patched,
   collapseToken,
+  startCollapsed = false,
 }: {
   root: TreeNode;
   rootName: string;
   onOpen: (path: string) => void;
   patched: ReadonlySet<string>;
   collapseToken: number;
+  startCollapsed?: boolean;
 }) {
   const activeFile = useUi((s) => s.activeFile);
   // Depth-1 directories start expanded (root row is expanded by default).
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  const [collapsed, setCollapsed] = useState<Set<string>>(() =>
+    startCollapsed ? collectDirPaths(root) : new Set(),
+  );
   const [rootOpen, setRootOpen] = useState(true);
 
   // When a new APK is imported, re-align defaults: only root stays open.

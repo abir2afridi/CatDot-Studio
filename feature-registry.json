@@ -199,6 +199,40 @@
       "evidence": ["cargo test -p catdot-core workspace", "apps/desktop Explorer ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ apk_import/apk_report IPC"]
     },
     {
+      "id": "apk-text-search",
+      "title": "APK-wide text search (Ctrl+Shift+F): Rust scans readable entries including pending patches, results jump into the editor",
+      "phase": 2,
+      "status": "real",
+      "evidence": [
+        "cargo test -p catdot-core workspace::tests::search_entries_case_patch_overlay_and_limits (case sensitivity, patch overlay, 200-hit cap)",
+        "apps/desktop features/search/SearchPanel.tsx: apk_search IPC with match-case toggle, grouped hits, truncated/scanned honesty, click opens the entry",
+        "CDP E2E on the packaged exe: apk_search invoked through the real command and UI search opens a hit"
+      ]
+    },
+    {
+      "id": "apk-replace-all",
+      "title": "Bulk replace across readable APK entries (exact case) with reversible patches and bounded limits",
+      "phase": 2,
+      "status": "real",
+      "evidence": [
+        "cargo test -p catdot-core workspace::tests::replace_in_entries_overlays_patches_and_is_exact (overlay, exact case, empty-target error)",
+        "apps/desktop features/search/SearchPanel.tsx: apk_replace_all IPC, success count/files, invalidates ['apk'] so Changes + tree update",
+        "CDP E2E: real replace applied, open_entry reflected it, revert_entry restored patch count 0"
+      ]
+    },
+    {
+      "id": "decoded-source-editing",
+      "title": "Browse, open, edit (reversible patches) and search apktool-decoded smali/XML/resource sources",
+      "phase": 3,
+      "status": "real",
+      "evidence": [
+        "cargo test -p catdot-core decoded:: (list skips build/binary, sandboxed paths, case-aware search, honest scanned count)",
+        "apps/desktop features/apk-explorer/Explorer.tsx: Decode action + Decoded sources tree; opening decoded/<rel> reads the working copy; saves become decoded/<rel> patches",
+        "CDP E2E with a seeded decoded tree: entries listed, open true, save patch visible, revert restores, search found both XML+smali (scanned 3), traversal INVALID_INPUT, tree+search UI, zero console errors",
+        "Honest limit: full apktool decode timing not re-run in this E2E; binary files are not listed as editable"
+      ]
+    },
+    {
       "id": "manual-edits",
       "title": "Manual text-entry edits with persisted patch file (F4, text entries) in a real Monaco editor",
       "phase": 2,

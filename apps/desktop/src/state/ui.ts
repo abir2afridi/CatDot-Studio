@@ -4,6 +4,7 @@
 import { create } from "zustand";
 
 export type Page = "guided" | "explorer" | "devices" | "system" | "settings";
+export type SidebarView = "explorer" | "search";
 export type BottomTab = "terminal" | "logs" | "build" | "diff" | "device" | "manifest" | "problems";
 import type { BuildReport } from "@catdot/shared-types";
 
@@ -35,6 +36,8 @@ interface UiState {
   locale: "en" | "bn";
   /** IDE layout. */
   explorerOpen: boolean;
+  /** Primary sidebar content: file explorer or APK text search. */
+  sidebarView: SidebarView;
   bottomOpen: boolean;
   /** VS Code-style secondary (right) sidebar — chat / changes view container. */
   secondaryOpen: boolean;
@@ -74,6 +77,8 @@ interface UiState {
   setTheme: (t: "dark" | "light") => void;
   setLocale: (l: "en" | "bn") => void;
   toggleExplorer: () => void;
+  openSearch: () => void;
+  setSidebarView: (v: SidebarView) => void;
   toggleBottom: () => void;
   toggleBottomMaximize: () => void;
   toggleSecondary: () => void;
@@ -110,6 +115,7 @@ export const useUi = create<UiState>((set) => ({
   theme: "dark",
   locale: localStorage.getItem("locale") === "bn" ? "bn" : "en",
   explorerOpen: true,
+  sidebarView: "explorer",
   bottomOpen: false,
   secondaryOpen: false,
   secondaryView: "chat",
@@ -167,6 +173,8 @@ export const useUi = create<UiState>((set) => ({
     set({ locale });
   },
   toggleExplorer: () => set((s) => ({ explorerOpen: !s.explorerOpen })),
+  openSearch: () => set({ page: "explorer", explorerOpen: true, sidebarView: "search" }),
+  setSidebarView: (sidebarView) => set({ sidebarView }),
   toggleBottom: () =>
     set((s) => ({
       bottomOpen: !s.bottomOpen,

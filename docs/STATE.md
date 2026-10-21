@@ -163,3 +163,30 @@
   vitest passed, audit 44 features PASSED; E2E all green with zero console
   errors. Installers: MSI 5.25 MiB sha256 EBE89C09…C9EA15; NSIS 4.05 MiB
   sha256 D5C0BF63…56BBF7. Evidence: `docs/EVIDENCE/phase-3-decode.md`.
+
+- **2026-10-21 — APK search + bulk replace (46 features)**: real `apk_search`
+  (Rust, case toggle, 200-hit cap, patch overlay) and `apk_replace_all`
+  (exact-case, ≤100 files, every change a reversible patch). UI: Explorer
+  magnifier / Ctrl+Shift+F sidebar Search view, result→Monaco jump, replace
+  box with honest counts. Tests: workspace search + replace unit tests; E2E on
+  the packaged exe applied a real replace, verified via `apk_open_entry`, then
+  reverted to patch count 0/clean content; zero console errors. Gates: 28
+  vitest, clippy, audit 46 PASSED. Installers: MSI 5.26 MiB sha256
+  59850BFF…C81B99; NSIS 4.05 MiB sha256 C1224D23…E31417. Evidence:
+  `docs/EVIDENCE/phase-2-search-replace.md`. Honest limit: only UTF-8 ZIP
+  entries are searchable (binary AXML/ARSC/DEX are skipped); decoded-source
+  tree editing is a separate future slice.
+
+- **2026-10-21 — Decoded source editing (47 features)**: `apk_decode` now has an
+  Explorer action; a bounded "Decoded sources" tree lists editable smali/XML/
+  resources, opens in Monaco, and saves as reversible `decoded/<rel>` patches.
+  Search also covers decoded sources (64 MiB scan budget, 200-hit cap);
+  `apk_open_entry`/`apk_save_entry` are path-sandboxed (`..`, build/, absolute
+  rejected). Export falls back to fresh-decode+rebuild when decoded patches
+  exist. Tests: 3 new core tests; 28 vitest; E2E with a seeded decoded tree
+  verified list/open/save/revert/search + UI hit→editor, traversal
+  INVALID_INPUT, zero console errors; workspace cleaned to patches []. Gates:
+  clippy, audit 47 PASSED. Installers: MSI 5.27 MiB sha256
+  CE981CE3…4F2345; NSIS 4.06 MiB sha256 1AC937D7…B3C582. Evidence:
+  `docs/EVIDENCE/phase-3-decoded-editing.md`. Honest limits: full apktool
+  decode of the 163 MB XAPK not re-timed; export-rebuild path not E2E'd.

@@ -17,9 +17,11 @@ use catdot_core::tools::{
     align_and_sign, decode, device_tools, edit_ops, ensure_keystore, rebuild, tool_paths, BuildReport,
 };
 use catdot_core::workspace::{
-    apply_decoded_patches, export_apk, import_apk, patch_summary, read_entry, report_of, sha256_str,
-    split_decoded_patches, ApkReport, Patch, PatchSummary, MAX_TEXT_BYTES,
+    apply_decoded_patches, export_apk, import_apk, patch_summary, read_entry, report_of,
+    replace_in_entries, search_entries, sha256_str, split_decoded_patches, ApkEntry, ApkReport,
+    ApkReplaceResult, ApkSearchResult, Patch, PatchSummary, MAX_SEARCH_HITS, MAX_TEXT_BYTES,
 };
+use catdot_core::decoded;
 
 use crate::AppState;
 
@@ -213,7 +215,8 @@ pub fn apk_reopen(
     Ok(true)
 }
 
-/// Open one entry (patched content wins if an edit is pending).
+/// Open one entry (patched content wins if an edit is pending). `decoded/…`
+/// paths read the apktool working copy; everything else reads the original APK.
 #[tauri::command]
 pub fn apk_open_entry(
     apk_state: State<'_, ApkState>,
@@ -230,7 +233,11 @@ pub fn apk_open_entry(
             content: content.to_string(),
         });
     }
-    let content = read_entry(&s.ws_root.join("original.apk"), &entry_path)?;
+    let content = if entry_path.starts_with("decoded/") {
+        decoded::read_entry(&s.ws_root.join("decoded"), &entry_path)?
+    } else {
+        read_entry(&s.ws_root.join("original.apk"), &entry_path)?
+    };
     Ok(OpenedFile {
         sha256: sha256_str(&content),
         size: content.len() as u64,
@@ -238,6 +245,14 @@ pub fn apk_open_entry(
         content,
         patched: false,
     })
+}
+
+/// List editable decoded text sources (`decoded/<rel>`); empty before decode.
+#[tauri::command]
+pub fn apk_decoded_entries(apk_state: State<'_, ApkState>) -> Result<Vec<ApkEntry>, AppError> {
+    let g = apk_lock(&apk_state)?;
+    let s = g.as_ref().ok_or_else(no_session_err)?;
+    decoded::list_entries(&s.ws_root.join("decoded"))
 }
 
 /// Save an edit (upsert the pending patch for that entry).
@@ -256,9 +271,13 @@ pub fn apk_save_entry(
     }
     let mut g = apk_lock(&apk_state)?;
     let s = g.as_mut().ok_or_else(no_session_err)?;
-    // Entry must exist in the original APK.
-    read_entry(&s.ws_root.join("original.apk"), &entry_path)
-        .map_err(|_| AppError::new(ErrorCode::JobNotFound, format!("entry `{entry_path}` not found"), "What happened: that file is not in the APK. What to do: pick one from the tree."))?;
+    // Entry must exist in the original APK or the decoded working copy.
+    if entry_path.starts_with("decoded/") {
+        decoded::file_of(&s.ws_root.join("decoded"), &entry_path)?;
+    } else {
+        read_entry(&s.ws_root.join("original.apk"), &entry_path)
+            .map_err(|_| AppError::new(ErrorCode::JobNotFound, format!("entry `{entry_path}` not found"), "What happened: that file is not in the APK. What to do: pick one from the tree."))?;
+    }
     s.patches.insert(entry_path, content);
     save_patches(s, &s.base_sha)?;
     Ok(patch_summary(&session_pairs(s)))
@@ -303,6 +322,71 @@ pub fn apk_patch_paths(apk_state: State<'_, ApkState>) -> Result<Vec<String>, Ap
     let mut v: Vec<String> = s.patches.keys().cloned().collect();
     v.sort();
     Ok(v)
+}
+
+/// Replace an exact string in every readable entry and record reversible
+/// patches for each changed file (bulk-edit tool; bounded by core limits).
+#[tauri::command]
+pub fn apk_replace_all(
+    apk_state: State<'_, ApkState>,
+    query: String,
+    replacement: String,
+) -> Result<ApkReplaceResult, AppError> {
+    require_allow(AccessLevel::L3EditWithApproval, RiskTier::Edit)?;
+    let mut g = apk_lock(&apk_state)?;
+    let s = g.as_mut().ok_or_else(no_session_err)?;
+    let patches = session_pairs(s);
+    let outcome = replace_in_entries(
+        &s.ws_root.join("original.apk"),
+        &patches,
+        &query,
+        &replacement,
+    )?;
+    for update in outcome.updates {
+        s.patches.insert(update.entry_path, update.content);
+    }
+    save_patches(s, &s.base_sha)?;
+    Ok(outcome.result)
+}
+
+/// Search readable text entries (pending patches included) for a query.
+#[tauri::command]
+pub fn apk_search(
+    apk_state: State<'_, ApkState>,
+    query: String,
+    case_sensitive: Option<bool>,
+) -> Result<ApkSearchResult, AppError> {
+    let g = apk_lock(&apk_state)?;
+    let s = g.as_ref().ok_or_else(no_session_err)?;
+    let patches: Vec<Patch> = s
+        .patches
+        .iter()
+        .map(|(entry_path, content)| Patch {
+            entry_path: entry_path.clone(),
+            content: content.clone(),
+        })
+        .collect();
+    let mut result = search_entries(
+        &s.ws_root.join("original.apk"),
+        &patches,
+        &query,
+        case_sensitive.unwrap_or(false),
+    )?;
+    // Decoded sources are searched too once the APK has been decoded; hits
+    // keep their `decoded/…` keys so the editor opens the same file.
+    if result.hits.len() < MAX_SEARCH_HITS {
+        let decoded = decoded::search(&s.ws_root.join("decoded"), &query, case_sensitive.unwrap_or(false))?;
+        result.scanned_entries += decoded.scanned_entries;
+        let room = MAX_SEARCH_HITS - result.hits.len();
+        if decoded.hits.len() > room {
+            result.truncated = true;
+        }
+        result.truncated = result.truncated || decoded.truncated;
+        result.hits.extend(decoded.hits.into_iter().take(room));
+    } else {
+        result.truncated = true;
+    }
+    Ok(result)
 }
 
 // ---------- Checkpoints (Part F4 change history: patches snapshot, not Git) ----------
@@ -485,7 +569,16 @@ pub fn apk_export(apk_state: State<'_, ApkState>) -> Result<ExportResult, AppErr
     let g = apk_lock(&apk_state)?;
     let s = g.as_ref().ok_or_else(no_session_err)?;
     let out = s.ws_root.join("exported.apk");
-    let sha = export_apk(&s.ws_root.join("original.apk"), &session_pairs(s), &out)?;
+    let all_pairs = session_pairs(s);
+    let (decoded_pairs, zip_pairs) = split_decoded_patches(&all_pairs);
+    // Decoded-source edits require an apktool rebuild; otherwise the fast
+    // ZIP-copy path is enough. Either way the original APK is never touched.
+    let sha = if decoded_pairs.is_empty() {
+        export_apk(&s.ws_root.join("original.apk"), &zip_pairs, &out)?
+    } else {
+        let rebuilt = rebuild_patched_project(s)?;
+        export_apk(&rebuilt, &zip_pairs, &out)?
+    };
     let size = std::fs::metadata(&out)
         .map_err(|e| internal_err(format!("stat: {e}")))?
         .len();

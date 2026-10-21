@@ -2,6 +2,9 @@
 // export → sign, checkpoints (F4) and device steps (F7).
 import type {
   ApkReport,
+  ApkEntry,
+  ApkReplaceResult,
+  ApkSearchResult,
   ApkStatus,
   BuildReport,
   CheckpointInfo,
@@ -35,6 +38,9 @@ export const apkSetVersion = (code: number, name?: string | null) =>
 
 export const apkReport = () => call<ApkReport>("apk_report");
 
+/** Editable text sources of the decoded apktool project (empty before decode). */
+export const apkDecodedEntries = () => call<ApkEntry[]>("apk_decoded_entries");
+
 export const apkOpenEntry = (entryPath: string) =>
   call<OpenedFile>("apk_open_entry", { entryPath });
 
@@ -49,6 +55,14 @@ export const apkRevertAll = () => call<PatchSummary>("apk_revert_all");
 export const apkPatchSummary = () => call<PatchSummary>("apk_patch_summary");
 
 export const apkPatchPaths = () => call<string[]>("apk_patch_paths");
+
+/** Full-text search over readable entries (pending patches included). */
+export const apkSearch = (query: string, caseSensitive: boolean) =>
+  call<ApkSearchResult>("apk_search", { query, caseSensitive });
+
+/** Replace an exact string across readable entries; every change is a patch. */
+export const apkReplaceAll = (query: string, replacement: string) =>
+  call<ApkReplaceResult>("apk_replace_all", { query, replacement });
 
 export const apkExport = () => call<ExportResult>("apk_export");
 

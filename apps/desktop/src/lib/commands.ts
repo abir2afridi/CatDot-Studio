@@ -46,6 +46,7 @@ export function useCommands(): PaletteCommand[] {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const setPage = useUi((s) => s.setPage);
+  const openSearch = useUi((s) => s.openSearch);
   const toggleExplorer = useUi((s) => s.toggleExplorer);
   const toggleBottom = useUi((s) => s.toggleBottom);
   const activeFile = useUi((s) => s.activeFile);
@@ -151,6 +152,12 @@ export function useCommands(): PaletteCommand[] {
         [
           { id: "view.guided", titleKey: "cmd.goGuided", run: () => setPage("guided") },
           { id: "view.explorer", titleKey: "cmd.goExplorer", run: () => setPage("explorer") },
+          {
+            id: "apk.search",
+            titleKey: "cmd.searchApk",
+            hay: "ctrl+shift+f find text",
+            run: () => openSearch(),
+          },
           { id: "view.devices", titleKey: "cmd.goDevices", run: () => setPage("devices") },
           { id: "view.system", titleKey: "cmd.goSystem", run: () => setPage("system") },
           { id: "view.settings", titleKey: "cmd.goSettings", run: () => setPage("settings") },
@@ -209,6 +216,7 @@ export function useCommands(): PaletteCommand[] {
     [
       t,
       setPage,
+      openSearch,
       toggleExplorer,
       toggleBottom,
       pickAndImport,
